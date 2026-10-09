@@ -329,3 +329,48 @@ for component in (Qgis.LegendComponent.Title,Qgis.LegendComponent.Group,Qgis.Leg
         self.edit_project("next(i for i in p.layoutManager().layouts()[0].items() if isinstance(i,QgsLayoutItemLegend)).attemptMove(QgsLayoutPoint(500,50))")
         data=self.run_worker()
         self.assertTrue(any(c['status']=='fail' and 'legend' in c['message'].lower() for c in data['checks']),data)
+
+    def test_prohibited_style_policy(self):
+        self.record['layers'][0]['style_role'] = 'prohibited'
+        cases = [
+            ({}, 'NO — Access prohibited', True),
+            ({'outline_color': '#ffffff'}, 'NO — Access prohibited', False),
+            ({'name': 'circle'}, 'NO — Access prohibited', False),
+            ({'outline_width': '0.1'}, 'NO — Access prohibited', False),
+            ({'angle': '45'}, 'NO — Access prohibited', False),
+            ({'size': '2'}, 'NO — Access prohibited', False),
+            ({'outline_style': 'no'}, 'NO — Access prohibited', False),
+            ({}, 'Access prohibited', False),
+        ]
+        for changes, caption, valid in cases:
+            with self.subTest(changes=changes, caption=caption):
+                props = dict(name='cross2', color='#b3261e', outline_color='#b3261e',
+                             outline_width='0.8', outline_width_unit='MM', size='4', size_unit='MM')
+                props.update(changes)
+                self.edit_project(f'l.setName({caption!r}); l.renderer().setSymbol(QgsMarkerSymbol.createSimple({props!r}))')
+                result = self.run_worker()
+                failures = [c for c in result['checks'] if c['id'] == 'load' and c['status'] == 'fail']
+                self.assertEqual(bool(failures), not valid, result)
+
+
+    def test_unrelated_white_x_has_no_prohibition_policy(self):
+        self.edit_project("l.renderer().setSymbol(QgsMarkerSymbol.createSimple({'name':'cross2', 'outline_color':'white'}))")
+        result = self.run_worker()
+        self.assertFalse(any(c['id'] == 'load' and c['status'] == 'fail' for c in result['checks']), result)
+
+    def test_prohibited_layer_transparency_fails(self):
+        self.record['layers'][0]['style_role'] = 'prohibited'
+        self.edit_project("l.setName('NO — Access prohibited'); l.setOpacity(0.2); l.renderer().setSymbol(QgsMarkerSymbol.createSimple({'name':'cross2', 'outline_color':'#b3261e', 'outline_width':'0.8', 'size':'4'}))")
+        result = self.run_worker()
+        self.assertTrue(any(c['id'] == 'load' and c['status'] == 'fail' and 'fully opaque' in c['message'] for c in result['checks']), result)
+
+
+    def test_prohibited_render_overrides_fail(self):
+        self.record['layers'][0]['style_role'] = 'prohibited'
+        setup = "l.setName('NO — Access prohibited'); l.renderer().setSymbol(QgsMarkerSymbol.createSimple({'name':'cross2', 'outline_color':'#b3261e', 'outline_width':'0.8', 'size':'4'})); "
+        for change in ["l.renderer().symbol().symbolLayer(0).setEnabled(False)",
+                       "from qgis.PyQt.QtGui import QPainter; l.setBlendMode(QPainter.CompositionMode.CompositionMode_Difference)"]:
+            with self.subTest(change=change):
+                self.edit_project(setup + change)
+                result = self.run_worker()
+                self.assertTrue(any(c['id'] == 'load' and c['status'] == 'fail' for c in result['checks']), result)

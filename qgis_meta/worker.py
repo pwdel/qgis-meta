@@ -32,7 +32,7 @@ def main(request_path, response_path):
     try:
         issues, unsupported, inventory = [], [], []
         fonts = []
-        from cartography import check_symbol, check_labels, inspect_layouts, export_layouts
+        from cartography import check_style_role, check_symbol, check_labels, inspect_layouts, export_layouts
         if request.get('isolation_source'):
             import errno
             import socket
@@ -79,6 +79,7 @@ def main(request_path, response_path):
             spec = expected.get(lid)
             if not spec:
                 continue
+            check_style_role(layer, spec.get('style_role'), issues)
             node = project.layerTreeRoot().findLayer(lid)
             if node is None or node.isVisible() != spec.get('visible', True):
                 issues.append(f'{lid}: layer visibility differs from registry')

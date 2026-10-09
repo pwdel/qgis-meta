@@ -34,9 +34,11 @@ Use shape plus wording so the map does not depend on color alone.
 Open markers such as crosses draw with their **stroke/outline**, not their fill.
 Set that visible stroke to the intended color. Do not use a white-only prohibition
 mark on light land or water. Check the renderer preview, Layers-panel swatch, map
-at intended scales and native legend together. For the winter-camping profile the
-chosen stroke is #B3261E, 0.8 mm, on a 4 mm X; the project regression test preserves
-that choice. This semantic rule does not mean every cross in every domain denotes
+at intended scales and native legend together. The shared `prohibited` style role requires an opaque #B3261E solid stroke,
+at least 0.8 mm wide, on a native `cross2` X at least 4 mm across. The layer and
+symbol must be fully opaque, with the marker rotated only in multiples of 90°.
+The marker must be enabled and use normal layer/feature blending.
+Its layer/legend caption must start with `NO` as a separate word. This semantic rule does not mean every cross in every domain denotes
 prohibition, nor that every project must contain a prohibited category.
 
 ## Editable note hierarchy
@@ -55,3 +57,24 @@ Use topic-specific notes only where needed; avoid duplicating a long warning on
 every page. A standalone map page still needs its own key and essential limits.
 The validator checks text/font/glyph availability for these labels. Hierarchy,
 accuracy of prose and readable placement remain explicit visual/editorial review.
+
+## Declaring a shared style rule
+
+Every layer conveying prohibition must declare `"style_role": "prohibited"` in
+its registry layer entry. This is a semantic declaration, independent of layer
+IDs, feature numbers and activity names. The native validator reads the saved
+QGIS renderer and rejects noncompliant shape, stroke color, transparency, size,
+width, orientation or caption in the load gate. Existing dependency checks also
+block data-defined styling; native legend checks prevent independent swatch
+substitutions. These checks run on both the original and relocated project.
+
+The implementation lives in `qgis_meta/cartography.py::check_style_role`, governed
+by the project's pinned governance revision. Update that pin to adopt a new rule.
+Projects without this declaration do not receive this semantic check: the engine
+cannot infer meaning from arbitrary symbols. Reviewers must verify declarations
+are complete. An unrelated X may omit the role. Currently only single-symbol
+native point markers are supported for this role; classified renderers block
+acceptance rather than silently skipping checks.
+
+This is a saved-style contract, not a guarantee of perceptual contrast on every
+background. Review exported maps for overlap, scale and legibility as well.

@@ -232,3 +232,46 @@ def export_layouts(project, output):
                 errors.extend(f'{layout.name()}: {error.message}' for error in item.renderingErrors())
         results.append({'name':layout.name(),'pages':layout.pageCollection().pageCount(),'pdf':path.name})
     return results, errors
+
+
+def check_style_role(layer, role, errors):
+    """Enforce declared meaning without guessing from IDs, names or shape."""
+    if role is None:
+        return
+    from qgis.core import QgsVectorLayer, Qgis
+    from qgis.PyQt.QtCore import Qt
+    from qgis.PyQt.QtGui import QPainter
+    name = layer.id()
+    def fail(detail):
+        errors.append(f'{name}: style role {role}: {detail}')
+    if role != 'prohibited':
+        fail('unknown semantic role')
+        return
+    if not re.match(r'^NO\b', layer.name()):
+        fail('legend caption must begin with NO')
+    if not isinstance(layer, QgsVectorLayer) or not layer.renderer() or layer.renderer().type() != 'singleSymbol':
+        fail('requires a single-symbol point renderer')
+        return
+    symbol = layer.renderer().symbol()
+    if not symbol or symbol.symbolLayerCount() != 1:
+        fail('requires exactly one native X marker')
+        return
+    sl = symbol.symbolLayer(0)
+    if sl.layerType() != 'SimpleMarker' or sl.properties().get('name') != 'cross2':
+        fail('requires native cross2 (X) marker')
+        return
+    if sl.strokeColor().name().lower() != '#b3261e' or sl.strokeColor().alpha() != 255:
+        fail('visible X stroke must be opaque #B3261E red')
+    if sl.strokeWidthUnit() != Qgis.RenderUnit.Millimeters or sl.strokeWidth() < 0.8:
+        fail('X stroke must be at least 0.8 mm')
+    if sl.sizeUnit() != Qgis.RenderUnit.Millimeters or sl.size() < 4:
+        fail('X size must be at least 4 mm')
+    if sl.strokeStyle() != Qt.PenStyle.SolidLine or sl.angle() % 90 != 0:
+        fail('X must have a solid stroke and retain X orientation')
+    if symbol.opacity() != 1 or layer.opacity() != 1:
+        fail('prohibition layer and symbol must be fully opaque')
+    if not sl.enabled():
+        fail('X marker must be enabled')
+    normal = QPainter.CompositionMode.CompositionMode_SourceOver
+    if layer.blendMode() != normal or layer.featureBlendMode() != normal:
+        fail('prohibition styles require normal blending to preserve red')

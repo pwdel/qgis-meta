@@ -774,6 +774,13 @@
         "visible": {
           "type": "boolean",
           "default": true
+        },
+        "style_role": {
+          "type": "string",
+          "enum": [
+            "prohibited"
+          ],
+          "description": "Shared semantic styling policy. Required for layers conveying prohibition; unrelated symbols may omit it."
         }
       },
       "required": [

@@ -132,8 +132,10 @@ opening or full-area positional-accuracy checks.
 Simple native labels are supported with installed, unsubstituted font families and
 valid fields or field/literal/CASE expressions evaluated against every feature.
 Functions, variables, rule-based labels, callouts, rich text, masks and active
-data-defined formatting remain blocked. Font availability does not establish
-identical font-file versions or glyph coverage on another operating system.
+data-defined formatting remain blocked. Actual label text is shaped with Qt to reject missing glyphs, including Last
+Resort placeholders; installed character fallback fonts are allowed. These checks
+are generic and impose no particular wording or numbering. They do not establish
+identical font-file versions or coverage on an untested operating system.
 
 Embedded print layouts support native map items with explicit project layers,
 plain text labels, pages and linked Single Box scale bars. The validator checks

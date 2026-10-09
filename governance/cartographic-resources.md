@@ -20,9 +20,11 @@ become a generic replacement symbol and pass because some pixels were rendered.
 Relocation uses only declared assets and the saved project, with original project
 reads and network access denied. Installed fonts are host runtime dependencies,
 not isolated by project relocation. A cross-platform release therefore needs a
-validation run on each target runtime. Family checks alone do not pin exact font
-files or prove every Unicode glyph exists; use licensed pinned fonts and visual
-or glyph-specific acceptance tests when exact typography is required.
+validation run on each target runtime. The validator also shapes actual supported layer-label and plain layout-label
+text through Qt and rejects missing glyphs or Last Resort placeholder fonts.
+Installed fallback fonts may supply individual characters. This is generic: no
+particular label wording or number sequence is required. Font-file versions and
+exact typography still need pinned fonts and visual review.
 
 Current scope is intentionally bounded. The validator permits simple symbols,
 standalone SVG markers, basic native labels and supported print-layout items.

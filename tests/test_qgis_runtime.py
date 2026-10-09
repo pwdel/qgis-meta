@@ -268,3 +268,31 @@ p.layerTreeRoot().setHasCustomLayerOrder(True);p.layerTreeRoot().setCustomLayerO
         data=self.run_worker()
         render=next(c for c in data['checks'] if c['id']=='render')
         self.assertEqual(render['evidence']['visible_layers'],[self.record['layers'][0]['id'],'second_layer'])
+
+    def test_arbitrary_label_text_is_supported(self):
+        path=self.root/'data/points.geojson'
+        data=json.loads(path.read_text());data['features'][0]['properties']['name']='Trail alpha 42 — North';path.write_text(json.dumps(data))
+        self.label_project()
+        result=self.run_worker()
+        self.assertTrue(all(c['status']=='pass' for c in result['checks']),result)
+
+    def test_label_missing_glyph_fails(self):
+        path=self.root/'data/points.geojson'
+        data=json.loads(path.read_text());data['features'][0]['properties']['name']='Trail '+chr(0x10FFFF);path.write_text(json.dumps(data))
+        self.label_project()
+        result=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'glyph' in c['message'] for c in result['checks']),result)
+
+    def test_expression_label_missing_glyph_fails(self):
+        self.label_project()
+        self.edit_project("s=l.labeling().settings();s.isExpression=True;s.fieldName=%r;l.setLabeling(QgsVectorLayerSimpleLabeling(s))" % ("'"+chr(0x10FFFF)+"'"))
+        result=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'glyph' in c['message'] for c in result['checks']),result)
+
+    def test_layout_label_missing_glyph_fails(self):
+        self.edit_project('''
+layout=QgsPrintLayout(p);layout.initializeDefaults();layout.setName('Glyph check')
+label=QgsLayoutItemLabel(layout);label.setText(chr(0x10FFFF));fmt=QgsTextFormat();fmt.setFont(QFont(QFontDatabase.families()[0]));label.setTextFormat(fmt);layout.addLayoutItem(label);p.layoutManager().addLayout(layout)
+''')
+        result=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'glyph' in c['message'] for c in result['checks']),result)

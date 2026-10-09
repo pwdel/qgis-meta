@@ -56,6 +56,30 @@ def check_text(fmt, errors, blocked, name, evidence):
         errors.append(f'{name}: invalid text color')
 
 
+def check_glyphs(text, font, errors, name):
+    """Shape actual text with Qt, including installed fallback fonts; reject tofu."""
+    from qgis.PyQt.QtGui import QTextLayout
+    from qgis.core import QgsVariantUtils
+    if QgsVariantUtils.isNull(text):
+        return
+    # Shape complete lines so ligatures, combining marks and fallback runs are retained.
+    for line in str(text).splitlines():
+        if not line.strip():
+            continue
+        layout = QTextLayout(line, font)
+        layout.beginLayout()
+        text_line = layout.createLine()
+        if text_line.isValid():
+            text_line.setLineWidth(1e9)
+        layout.endLayout()
+        runs = layout.glyphRuns()
+        if not runs or any(not run.rawFont().isValid() or 0 in run.glyphIndexes()
+                           or 'lastresort' in run.rawFont().familyName().replace(' ', '').casefold()
+                           for run in runs):
+            errors.append(f'{name}: missing glyph in label text; install a font covering its characters')
+            return
+
+
 def check_labels(layer, errors, blocked, evidence):
     from qgis.core import QgsExpression, QgsVectorLayerSimpleLabeling
     labeling = layer.labeling()
@@ -88,12 +112,16 @@ def check_labels(layer, errors, blocked, evidence):
             return
         for feature in layer.getFeatures():
             ctx.setFeature(feature)
-            expr.evaluate(ctx)
+            value = expr.evaluate(ctx)
             if expr.hasEvalError():
                 errors.append(f'{name}: label expression failed: {expr.evalErrorString()}')
                 break
+            check_glyphs(value, settings.format().font(), errors, name)
     elif settings.fieldName not in {f.name() for f in layer.fields()}:
         errors.append(f'{name}: missing label field {settings.fieldName!r}')
+    else:
+        for feature in layer.getFeatures():
+            check_glyphs(feature[settings.fieldName], settings.format().font(), errors, name)
 
 
 def inspect_layouts(project, root, declared, errors, blocked, fonts):
@@ -124,6 +152,8 @@ def inspect_layouts(project, root, declared, errors, blocked, fonts):
                 if item.mode() != QgsLayoutItemLabel.ModeFont or '[%' in item.text():
                     blocked.append(f'{name}: HTML or expression text needs validation')
                 check_text(item.textFormat(), errors, blocked, name, fonts)
+                if item.mode() == QgsLayoutItemLabel.ModeFont and '[%' not in item.text():
+                    check_glyphs(item.text(), item.textFormat().font(), errors, name)
             elif isinstance(item, QgsLayoutItemScaleBar):
                 check_text(item.textFormat(), errors, blocked, name, fonts)
                 if type(item.numericFormat()) is not QgsBasicNumericFormat:

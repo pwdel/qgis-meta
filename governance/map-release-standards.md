@@ -25,3 +25,5 @@ its registry, data provenance, coordinate-system decisions and test evidence.
 Project-specific exceptions must describe their scope, reason and remaining risk.
 These standards guide design review; the current validator does not automatically
 certify cartographic quality, current legal access or every layout dependency.
+
+Follow [legends, permission symbols and note hierarchy](legends-and-notes.md).

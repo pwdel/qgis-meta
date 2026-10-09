@@ -191,11 +191,7 @@ l.setLabeling(QgsVectorLayerSimpleLabeling(s));l.setLabelsEnabled(True)
 
     def test_embedded_layout_passes_and_exports(self):
         self.label_project()
-        self.edit_project('''
-layout=QgsPrintLayout(p);layout.initializeDefaults();layout.setName('Synthetic')
-m=QgsLayoutItemMap(layout);layout.addLayoutItem(m);m.attemptResize(QgsLayoutSize(100,100));m.setLayers([l]);m.setKeepLayerSet(True);m.setCrs(p.crs());m.zoomToExtent(QgsRectangle(-1,-1,1,1))
-p.layoutManager().addLayout(layout)
-''')
+        self.layout_with_legend()
         data=self.run_worker()
         self.assertTrue(all(c['status']=='pass' for c in data['checks']),data)
         self.assertTrue((Path(self.temp.name)/'work/layout-0.pdf').is_file())
@@ -296,3 +292,40 @@ label=QgsLayoutItemLabel(layout);label.setText(chr(0x10FFFF));fmt=QgsTextFormat(
 ''')
         result=self.run_worker()
         self.assertTrue(any(c['status']=='fail' and 'glyph' in c['message'] for c in result['checks']),result)
+
+    def layout_with_legend(self, include=True, omit_layer=False):
+        self.edit_project('''
+layout=QgsPrintLayout(p);layout.initializeDefaults();layout.setName('Legend coverage')
+m=QgsLayoutItemMap(layout);layout.addLayoutItem(m);m.attemptResize(QgsLayoutSize(100,100));m.setLayers([l]);m.setKeepLayerSet(True);m.setCrs(p.crs());m.zoomToExtent(QgsRectangle(-1,-1,1,1))
+'''+('''
+legend=QgsLayoutItemLegend(layout);layout.addLayoutItem(legend);legend.setLinkedMap(m);legend.setTitle('Key');legend.setAutoUpdateModel(False);legend.attemptResize(QgsLayoutSize(80,40));legend.attemptMove(QgsLayoutPoint(110,10))
+for component in (Qgis.LegendComponent.Title,Qgis.LegendComponent.Group,Qgis.LegendComponent.Subgroup,Qgis.LegendComponent.SymbolLabel):legend.setStyleFont(component,QFont(QFontDatabase.families()[0],10))
+'''+('legend.model().rootGroup().removeAllChildren()\n' if omit_layer else '') if include else '')+'''p.layoutManager().addLayout(layout)
+''')
+
+    def test_native_legend_covers_map(self):
+        self.layout_with_legend()
+        data=self.run_worker()
+        self.assertTrue(all(c['status']=='pass' for c in data['checks']),data)
+
+    def test_map_without_legend_fails(self):
+        self.layout_with_legend(include=False)
+        data=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'legend' in c['message'].lower() for c in data['checks']),data)
+
+    def test_legend_missing_map_layer_fails(self):
+        self.layout_with_legend(omit_layer=True)
+        data=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'legend' in c['message'].lower() for c in data['checks']),data)
+
+    def test_transparent_legend_fails(self):
+        self.layout_with_legend()
+        self.edit_project("next(i for i in p.layoutManager().layouts()[0].items() if isinstance(i,QgsLayoutItemLegend)).setItemOpacity(0)")
+        data=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'legend' in c['message'].lower() for c in data['checks']),data)
+
+    def test_legend_outside_page_fails(self):
+        self.layout_with_legend()
+        self.edit_project("next(i for i in p.layoutManager().layouts()[0].items() if isinstance(i,QgsLayoutItemLegend)).attemptMove(QgsLayoutPoint(500,50))")
+        data=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'legend' in c['message'].lower() for c in data['checks']),data)

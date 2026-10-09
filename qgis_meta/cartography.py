@@ -126,7 +126,8 @@ def check_labels(layer, errors, blocked, evidence):
 
 def inspect_layouts(project, root, declared, errors, blocked, fonts):
     from qgis.core import (QgsPrintLayout, QgsLayoutItem, QgsLayoutItemMap,
-        QgsLayoutItemLabel, QgsLayoutItemScaleBar, QgsLayoutItemPage, QgsBasicNumericFormat)
+        QgsLayoutItemLabel, QgsLayoutItemScaleBar, QgsLayoutItemPage, QgsBasicNumericFormat, QgsLayoutItemLegend,
+        Qgis)
     targets = set()
     for layout in project.layoutManager().layouts():
         if not isinstance(layout, QgsPrintLayout):
@@ -136,6 +137,14 @@ def inspect_layouts(project, root, declared, errors, blocked, fonts):
             blocked.append(f'{layout.name()}: feature-driven atlas needs validation')
         if layout.pageCollection().pageCount() == 0:
             errors.append(f'{layout.name()}: no layout pages')
+        legends = [i for i in layout.items() if isinstance(i, QgsLayoutItemLegend)]
+        def legend_visible(legend, map_item):
+            page = layout.pageCollection().page(map_item.page())
+            return (legend.linkedMap() == map_item and legend.page() == map_item.page()
+                    and legend.isVisible() and legend.effectiveOpacity() > 0
+                    and not legend.excludeFromExports() and page is not None
+                    and page.sceneBoundingRect().adjusted(-0.5,-0.5,0.5,0.5).contains(legend.sceneBoundingRect()))
+
         for item in layout.items():
             if not isinstance(item, QgsLayoutItem):
                 continue
@@ -144,10 +153,45 @@ def inspect_layouts(project, root, declared, errors, blocked, fonts):
                 blocked.append(f'{name}: data-defined layout item needs validation')
             if isinstance(item, QgsLayoutItemMap):
                 targets.add(item.crs().authid())
+                if not any(legend_visible(l, item) for l in legends):
+                    errors.append(f'{name}: missing visible linked legend on the map page')
                 if item.layerStyleOverrides() or item.followVisibilityPreset() or item.atlasDriven() or item.grids().asList() or item.overviews().asList():
                     blocked.append(f'{name}: map overrides/themes/atlas/grids/overviews need validation')
                 if not item.keepLayerSet() or not item.layers() or any(l.id() not in project.mapLayers() for l in item.layers()):
                     errors.append(f'{name}: map must reference explicit project layers')
+            elif isinstance(item, QgsLayoutItemLegend):
+                linked = item.linkedMap()
+                if not linked or linked not in layout.items() or linked.page() != item.page():
+                    errors.append(f'{name}: legend must link to a map on the same page')
+                    continue
+                if item.legendFilterByMapEnabled() or item.legendFilterOutAtlas() or item.model().layerStyleOverrides():
+                    blocked.append(f'{name}: filtered or overridden legends need validation')
+                nodes = item.model().rootGroup().findLayers()
+                actual = [node.layerId() for node in nodes]
+                expected = {layer.id() for layer in linked.layers()}
+                if set(actual) != expected or len(actual) != len(expected):
+                    errors.append(f'{name}: legend layer coverage differs from linked map')
+                components = (Qgis.LegendComponent.Title, Qgis.LegendComponent.Group,
+                              Qgis.LegendComponent.Subgroup, Qgis.LegendComponent.SymbolLabel)
+                for component in components:
+                    style = item.style(component)  # Keep the C++ owner alive for its textFormat reference.
+                    check_text(style.textFormat(), errors, blocked, name, fonts)
+                check_glyphs(item.title(), item.style(Qgis.LegendComponent.Title).font(), errors, name)
+                for node in nodes:
+                    layer = node.layer()
+                    if not layer or not layer.name().strip():
+                        errors.append(f'{name}: legend layer missing or unnamed')
+                        continue
+                    if any(str(k).startswith('legend/') for k in node.customProperties()):
+                        blocked.append(f'{name}: custom legend text/symbol/order needs validation')
+                    renderer = getattr(layer, 'renderer', lambda: None)()
+                    if not renderer or not hasattr(renderer, 'legendSymbolItems'):
+                        blocked.append(f'{name}: legend renderer needs validation')
+                        continue
+                    entries = item.model().layerLegendNodes(node)
+                    if len(entries) != len(renderer.legendSymbolItems()) or not entries:
+                        errors.append(f'{name}: legend symbol coverage differs from renderer')
+                    check_glyphs(layer.name(), item.style(Qgis.LegendComponent.SymbolLabel).font(), errors, name)
             elif isinstance(item, QgsLayoutItemLabel):
                 if item.mode() != QgsLayoutItemLabel.ModeFont or '[%' in item.text():
                     blocked.append(f'{name}: HTML or expression text needs validation')

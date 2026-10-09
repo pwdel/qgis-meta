@@ -138,13 +138,16 @@ are generic and impose no particular wording or numbering. They do not establish
 identical font-file versions or coverage on an untested operating system.
 
 Embedded print layouts support native map items with explicit project layers,
-plain text labels, pages and linked Single Box scale bars. The validator checks
+plain text labels, native linked legends, pages and linked Single Box scale bars. The validator checks
 fonts, symbols and map CRSs, then exports a PDF and renders every page. These
 checks repeat on the relocated project; PDFs and page previews are retained with
 the report. Layout style overrides, themes, feature-driven atlases, map grids,
-overviews, pictures, HTML, legends and other item types remain blocked pending
+overviews, pictures, HTML and other item types remain blocked pending
 dedicated checks. The reusable QPT template is tested separately by the project.
 
 See [cartographic resource availability](cartographic-resources.md). These are
 dependency and export checks, not an aesthetic approval or guarantee that all
 labels will be placed at every zoom level. Review saved previews at target scales.
+
+Every layout map now requires a same-page native legend with full layer and symbol
+coverage; see [legends and notes](legends-and-notes.md).

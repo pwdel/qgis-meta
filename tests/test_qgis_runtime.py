@@ -155,3 +155,116 @@ p.write();p.clear()
         self.configure_transform(broken=True)
         result=self.run_worker()
         self.assertTrue(any(c['id']=='load' and c['status']=='fail' and 'coordinate operation' in c['message'] for c in result['checks']),result)
+
+    def edit_project(self, code):
+        python, env = runtime_environment(PYTHON, APP)
+        script = '''
+import sys
+from qgis.core import *
+from qgis.PyQt.QtGui import QFont,QFontDatabase
+app=QgsApplication([],False);app.initQgis()
+p=QgsProject();p.read(sys.argv[1]);l=next(iter(p.mapLayers().values()))
+'''+code+'\np.write();p.clear()\n'
+        subprocess.run([python,'-c',script,str(self.root/'maps/map.qgs')],env=env,check=True,capture_output=True)
+
+    def label_project(self, missing_font=False, invalid_field=False):
+        self.edit_project("""
+s=QgsPalLayerSettings();s.fieldName=%r
+fmt=QgsTextFormat();fmt.setFont(QFont(%r or QFontDatabase.families()[0]));fmt.setSize(10);s.setFormat(fmt)
+l.setLabeling(QgsVectorLayerSimpleLabeling(s));l.setLabelsEnabled(True)
+""" % ('absent' if invalid_field else 'name', 'MissingFont_qgis_meta_6789' if missing_font else ''))
+
+    def test_native_labels_pass(self):
+        self.label_project()
+        data=self.run_worker()
+        self.assertTrue(all(c['status']=='pass' for c in data['checks']),data)
+
+    def test_missing_label_font_fails(self):
+        self.label_project(missing_font=True)
+        data=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'font' in c['message'].lower() for c in data['checks']),data)
+
+    def test_missing_label_field_fails(self):
+        self.label_project(invalid_field=True)
+        data=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'label' in c['message'].lower() for c in data['checks']),data)
+
+    def test_embedded_layout_passes_and_exports(self):
+        self.label_project()
+        self.edit_project('''
+layout=QgsPrintLayout(p);layout.initializeDefaults();layout.setName('Synthetic')
+m=QgsLayoutItemMap(layout);layout.addLayoutItem(m);m.attemptResize(QgsLayoutSize(100,100));m.setLayers([l]);m.setKeepLayerSet(True);m.setCrs(p.crs());m.zoomToExtent(QgsRectangle(-1,-1,1,1))
+p.layoutManager().addLayout(layout)
+''')
+        data=self.run_worker()
+        self.assertTrue(all(c['status']=='pass' for c in data['checks']),data)
+        self.assertTrue((Path(self.temp.name)/'work/layout-0.pdf').is_file())
+
+    def test_declared_missing_svg_fails(self):
+        path=self.root/'data/missing.svg'
+        self.record['assets'].append(dict(self.record['assets'][0],id='symbol',path='data/missing.svg'))
+        self.edit_project("l.renderer().setSymbol(QgsMarkerSymbol([QgsSvgMarkerSymbolLayer(%r)]))" % str(path))
+        data=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'SVG' in c['message'] for c in data['checks']),data)
+
+    def svg_project(self, content):
+        path=self.root/'data/symbol.svg';path.write_text(content)
+        self.record['assets'].append(dict(self.record['assets'][0],id='symbol',path='data/symbol.svg',sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
+        self.edit_project("l.renderer().setSymbol(QgsMarkerSymbol([QgsSvgMarkerSymbolLayer(%r)]))" % str(path))
+
+    def test_valid_local_svg_passes(self):
+        self.svg_project('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><circle cx="5" cy="5" r="4" fill="red"/></svg>')
+        data=self.run_worker()
+        self.assertTrue(all(c['status']=='pass' for c in data['checks']),data)
+
+    def test_corrupt_local_svg_fails(self):
+        self.svg_project('not an svg')
+        data=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'SVG' in c['message'] for c in data['checks']),data)
+
+    def test_svg_external_image_is_blocked(self):
+        self.svg_project('<svg xmlns="http://www.w3.org/2000/svg"><image href="https://example.invalid/a.png"/></svg>')
+        data=self.run_worker()
+        self.assertTrue(any(c['status']=='blocked' and 'SVG' in c['message'] for c in data['checks']),data)
+
+    def test_missing_layout_font_fails(self):
+        self.edit_project('''
+layout=QgsPrintLayout(p);layout.initializeDefaults();layout.setName('Bad font')
+label=QgsLayoutItemLabel(layout);label.setText('Hello');fmt=QgsTextFormat();fmt.setFont(QFont('MissingFont_qgis_meta_6789'));label.setTextFormat(fmt);layout.addLayoutItem(label);p.layoutManager().addLayout(layout)
+''')
+        data=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'font' in c['message'].lower() for c in data['checks']),data)
+
+    def test_label_callout_is_blocked(self):
+        self.label_project()
+        self.edit_project('''
+s=l.labeling().settings();callout=QgsBalloonCallout();callout.setEnabled(True)
+callout.setMarkerSymbol(QgsMarkerSymbol([QgsSvgMarkerSymbolLayer('/missing/callout.svg')]))
+s.setCallout(callout);l.setLabeling(QgsVectorLayerSimpleLabeling(s))
+''')
+        data=self.run_worker()
+        self.assertTrue(any(c['status']=='blocked' and 'callout' in c['message'] for c in data['checks']),data)
+
+    def test_symbol_level_expression_is_blocked(self):
+        self.edit_project("l.renderer().symbol().dataDefinedProperties().setProperty(QgsSymbol.Property.Opacity,QgsProperty.fromExpression('missing_field'))")
+        data=self.run_worker()
+        self.assertTrue(any(c['status']=='blocked' and 'data-defined symbol' in c['message'] for c in data['checks']),data)
+
+    def test_scale_bar_expression_is_blocked(self):
+        self.edit_project('''
+layout=QgsPrintLayout(p);layout.initializeDefaults();layout.setName('Bad scale')
+m=QgsLayoutItemMap(layout);layout.addLayoutItem(m);m.attemptResize(QgsLayoutSize(100,100));m.setLayers([l]);m.setKeepLayerSet(True);m.setCrs(p.crs());m.zoomToExtent(QgsRectangle(-1,-1,1,1))
+scale=QgsLayoutItemScaleBar(layout);layout.addLayoutItem(scale);scale.setLinkedMap(m);scale.setStyle('Single Box');scale.setNumericFormat(QgsExpressionBasedNumericFormat());p.layoutManager().addLayout(layout)
+''')
+        data=self.run_worker()
+        self.assertTrue(any(c['status']=='blocked' and 'numeric format' in c['message'] for c in data['checks']),data)
+
+    def test_preview_honors_saved_custom_layer_order(self):
+        self.edit_project('''
+second=QgsVectorLayer(l.source(),'Second','ogr');second.setId('second_layer');p.addMapLayer(second)
+p.layerTreeRoot().setHasCustomLayerOrder(True);p.layerTreeRoot().setCustomLayerOrder([l,second])
+''')
+        self.record['layers'].append(dict(self.record['layers'][0],id='second_layer'))
+        data=self.run_worker()
+        render=next(c for c in data['checks'] if c['id']=='render')
+        self.assertEqual(render['evidence']['visible_layers'],[self.record['layers'][0]['id'],'second_layer'])

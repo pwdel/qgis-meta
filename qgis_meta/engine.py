@@ -146,6 +146,9 @@ def validate(target, mode='full', *, output=None, qgis_python=None, qgis_app=Non
                 if output:
                     dest = output / f'{index:03d}-{pid}'
                     dest.mkdir(exist_ok=True)
+                    for artifact in work.rglob('layout-*'):
+                        if artifact.is_file() and artifact.suffix in {'.pdf', '.png'}:
+                            shutil.copy2(artifact, dest / (artifact.parent.name + '-' + artifact.name))
                     for preview in work.rglob('preview.png'):
                         shutil.copy2(preview, dest / (preview.parent.name + '-preview.png'))
                     for junit in work.rglob('*.xml'):

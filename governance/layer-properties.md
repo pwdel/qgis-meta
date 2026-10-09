@@ -30,3 +30,6 @@ For design discovery use [Style Hub](../resources/qgis-style-hub.md), [Style Man
 Project-wide requirements: [coordinate reference systems](coordinate-reference-systems.md)
 and [minimum map release standards](map-release-standards.md). Source-CRS equality
 alone is insufficient: test the saved operations into the actual canvas and export CRSs.
+
+For symbols, colors and typography, follow [cartographic resource availability](cartographic-resources.md).
+Native symbol definitions need no download; external assets and fonts must resolve locally.

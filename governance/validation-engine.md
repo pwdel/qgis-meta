@@ -61,7 +61,7 @@ The original [v1 schema](../schemas/qgis-registry.schema.json) is retained. Migr
 - **Negative:** remove an asset and falsify a hash in disposable copies; verify the same asset validator rejects each mutation. Native regression tests separately verify QGIS rejects missing data.
 - **Packages:** verify installed package version and clean Git source identity, then execute the registered pytest nodes when explicitly enabled. Required skipped, xfailed, absent, failing or uncollected tests cannot pass. Unavailable plugins/interpreters remain blocked.
 
-This first engine supports local OGR GeoJSON/GeoPackage and GDAL GeoTIFF sources, single-symbol renderers with simple marker/line/fill symbols, and self-contained SVG markers without active data-defined properties. Compound formats such as VRT and unsupported providers are blocked **before** project loading. Online providers need dedicated validation support and are currently blocked. Joins, auxiliary layers, external forms, labels, map themes, print layouts and more complex symbol types need dedicated checks and currently block full acceptance. Native regression coverage currently concentrates on GeoJSON and simple markers; other admitted formats require project-specific acceptance evidence before declaring a supported distribution matrix.
+This first engine supports local OGR GeoJSON/GeoPackage and GDAL GeoTIFF sources, single-symbol renderers with simple marker/line/fill symbols, and self-contained SVG markers without active data-defined properties. Compound formats such as VRT and unsupported providers are blocked **before** project loading. Online providers need dedicated validation support and are currently blocked. Joins, auxiliary layers, external forms, map themes and more complex symbol types need dedicated checks and currently block full acceptance. Native regression coverage currently concentrates on GeoJSON and simple markers; other admitted formats require project-specific acceptance evidence before declaring a supported distribution matrix.
 
 Project supplied plugin tests provide the assertions for their actual workflows (collection installation, service requests, acquisition and packaging). The engine supplies execution and fresh result collection, not prewritten upstream-plugin integration adapters. Those tests must meet [the package-specific requirements](integration-tests.md); merely importing a plugin is insufficient.
 
@@ -125,3 +125,24 @@ for both canvas and preview targets. It rejects missing/unavailable operations a
 fallback-enabled transformations, even when the preview itself renders successfully.
 The report includes checked pipelines. This does not replace a fresh-profile desktop
 opening or full-area positional-accuracy checks.
+
+
+## Saved cartography
+
+Simple native labels are supported with installed, unsubstituted font families and
+valid fields or field/literal/CASE expressions evaluated against every feature.
+Functions, variables, rule-based labels, callouts, rich text, masks and active
+data-defined formatting remain blocked. Font availability does not establish
+identical font-file versions or glyph coverage on another operating system.
+
+Embedded print layouts support native map items with explicit project layers,
+plain text labels, pages and linked Single Box scale bars. The validator checks
+fonts, symbols and map CRSs, then exports a PDF and renders every page. These
+checks repeat on the relocated project; PDFs and page previews are retained with
+the report. Layout style overrides, themes, feature-driven atlases, map grids,
+overviews, pictures, HTML, legends and other item types remain blocked pending
+dedicated checks. The reusable QPT template is tested separately by the project.
+
+See [cartographic resource availability](cartographic-resources.md). These are
+dependency and export checks, not an aesthetic approval or guarantee that all
+labels will be placed at every zoom level. Review saved previews at target scales.

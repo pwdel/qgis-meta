@@ -31,6 +31,8 @@ def main(request_path, response_path):
 
     try:
         issues, unsupported, inventory = [], [], []
+        fonts = []
+        from cartography import check_symbol, check_labels, inspect_layouts, export_layouts
         if request.get('isolation_source'):
             import errno
             import socket
@@ -124,22 +126,9 @@ def main(request_path, response_path):
                         unsupported.append(f'{lid}: renderer {renderer.type()} requires expression/dependency validation')
                     from qgis.core import QgsRenderContext
                     for symbol in renderer.symbols(QgsRenderContext()):
-                        for sl in symbol.symbolLayers():
-                            if sl.dataDefinedProperties().hasActiveProperties():
-                                unsupported.append(f'{lid}: active data-defined symbol properties require dependency validation')
-                            if sl.layerType() == 'SvgMarker':
-                                p = Path(sl.path()).resolve()
-                                if p.is_file():
-                                    import re
-                                    svg = p.read_text()
-                                    if re.search(r'(?:href\s*=\s*[\"\'](?!#|data:)|url\(\s*(?!#))', svg):
-                                        unsupported.append(f'{lid}: SVG external references need dependency validation')
-                                if p not in declared or not p.is_relative_to(root):
-                                    issues.append(f'{lid}: SVG is not a declared project asset: {p}')
-                            elif sl.layerType() not in {'SimpleMarker', 'SimpleLine', 'SimpleFill'}:
-                                unsupported.append(f'{lid}: symbol layer {sl.layerType()} requires dependency validation')
+                        check_symbol(symbol, root, declared, issues, unsupported, lid)
                 if layer.labelsEnabled():
-                    unsupported.append(f'{lid}: label expression/font/placement acceptance requires an additional validator')
+                    check_labels(layer, issues, unsupported, fonts)
             elif isinstance(layer, QgsRasterLayer):
                 if spec['geometry'] != 'Raster' or layer.width() <= 0 or layer.height() <= 0:
                     issues.append(f'{lid}: invalid raster dimensions or expected type')
@@ -149,7 +138,8 @@ def main(request_path, response_path):
         import math
         operations = []
         context = project.transformContext()
-        for destination in {project.crs().authid(), record['render']['crs']}:
+        layout_targets = inspect_layouts(project, root, declared, issues, unsupported, fonts)
+        for destination in {project.crs().authid(), record['render']['crs']} | layout_targets:
             target = QgsCoordinateReferenceSystem(destination)
             for layer in layers.values():
                 source = layer.crs()
@@ -178,20 +168,21 @@ def main(request_path, response_path):
                 operations.append({'layer': layer.id(), 'source': source.authid(),
                                    'destination': destination, 'operation': operation,
                                    'accuracy_metres': selected.accuracy})
-        if project.layoutManager().layouts():
-            unsupported.append('Print layouts require separate layout export/dependency checks')
         if project.mapThemeCollection().mapThemes():
             unsupported.append('Map themes require theme-specific rendering checks')
         add('load', 'fail' if issues else 'pass', '; '.join(issues) if issues else
             'QGIS loaded all expected layers and verified their data', layers=inventory, coordinate_operations=operations)
         add('dependencies', 'blocked' if unsupported else 'pass', '; '.join(unsupported) if unsupported
-            else 'Supported local datasource and symbol dependencies resolved')
+            else 'Supported local datasource and cartographic dependencies resolved', fonts=fonts)
         if issues or unsupported:
             add('render', 'blocked', 'Resolve layer failures or unsupported dependencies before rendering')
         else:
+            layout_results, layout_errors = export_layouts(project, output)
+            add('layouts', 'fail' if layout_errors else 'pass', '; '.join(layout_errors) or 'Embedded layout export checks passed', layouts=layout_results)
             cfg = record['render']
             settings = QgsMapSettings()
-            visible = project.layerTreeRoot().checkedLayers()
+            visible = [layer for layer in project.layerTreeRoot().layerOrder()
+                       if project.layerTreeRoot().findLayer(layer.id()).isVisible()]
             settings.setLayers(visible)
             settings.setDestinationCrs(QgsCoordinateReferenceSystem(cfg['crs']))
             settings.setTransformContext(project.transformContext())

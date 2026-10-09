@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qgis-meta"
+version = "0.1.0"
+description = "Registry-driven validation of portable QGIS projects"
+requires-python = ">=3.10"
+dependencies = ["jsonschema>=4.18,<5"]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10"]
+
+[project.scripts]
+qgis-meta = "qgis_meta.cli:main"
+
+[tool.setuptools]
+packages = ["qgis_meta"]
+
+[tool.setuptools.package-data]
+qgis_meta = ["contracts/*.json"]

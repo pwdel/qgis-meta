@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "status": "draft",
+  "governance_revision": null,
+  "project": {
+    "id": "example-map",
+    "file": "example.qgz",
+    "crs": "EPSG:4326",
+    "outputs": [
+      "offline"
+    ]
+  },
+  "runtime": {
+    "qgis_version": null,
+    "python_version": null,
+    "platform": null,
+    "distribution_source": null,
+    "venv": ".venv",
+    "lock_file": "requirements-qgis.lock.txt"
+  },
+  "packages": [
+    {
+      "id": "qgis-resource-sharing",
+      "status": "not-used",
+      "reason": "Synthetic template does not adopt this plugin; reassess for the real project.",
+      "version": null,
+      "source_url": "https://plugins.qgis.org/plugins/qgis_resource_sharing/",
+      "source_revision": null,
+      "archive_sha256": null,
+      "purposes": [],
+      "config_paths": [],
+      "test_ids": []
+    },
+    {
+      "id": "quickmapservices",
+      "status": "not-used",
+      "reason": "Synthetic template does not adopt this plugin; reassess for the real project.",
+      "version": null,
+      "source_url": "https://plugins.qgis.org/plugins/quick_map_services/",
+      "source_revision": null,
+      "archive_sha256": null,
+      "purposes": [],
+      "config_paths": [],
+      "test_ids": []
+    },
+    {
+      "id": "quickosm",
+      "status": "not-used",
+      "reason": "Synthetic template does not adopt this plugin; reassess for the real project.",
+      "version": null,
+      "source_url": "https://plugins.qgis.org/plugins/QuickOSM/",
+      "source_revision": null,
+      "archive_sha256": null,
+      "purposes": [],
+      "config_paths": [],
+      "test_ids": []
+    },
+    {
+      "id": "geopacker",
+      "status": "not-used",
+      "reason": "Synthetic template does not adopt this plugin; reassess for the real project.",
+      "version": null,
+      "source_url": "https://plugins.qgis.org/plugins/geopacker/",
+      "source_revision": null,
+      "archive_sha256": null,
+      "purposes": [],
+      "config_paths": [],
+      "test_ids": []
+    },
+    {
+      "id": "pytest-qgis",
+      "status": "blocked",
+      "reason": "Test environment has not been provisioned.",
+      "version": null,
+      "source_url": "https://github.com/GispoCoding/pytest-qgis",
+      "source_revision": null,
+      "archive_sha256": null,
+      "purposes": [
+        "test"
+      ],
+      "config_paths": [],
+      "test_ids": [
+        "pytest-qgis-runtime",
+        "pytest-qgis-failure"
+      ]
+    }
+  ],
+  "assets": [],
+  "layers": [],
+  "tests": [
+    {
+      "id": "registry",
+      "kind": "registry",
+      "package_id": null,
+      "nodeid": "tests/test_acceptance.py::test_registry",
+      "status": "not-run",
+      "report": null
+    },
+    {
+      "id": "assets",
+      "kind": "assets",
+      "package_id": null,
+      "nodeid": "tests/test_acceptance.py::test_assets",
+      "status": "not-run",
+      "report": null
+    },
+    {
+      "id": "load",
+      "kind": "load",
+      "package_id": null,
+      "nodeid": "tests/test_acceptance.py::test_load",
+      "status": "not-run",
+      "report": null
+    },
+    {
+      "id": "render",
+      "kind": "render",
+      "package_id": null,
+      "nodeid": "tests/test_acceptance.py::test_render",
+      "status": "not-run",
+      "report": null
+    },
+    {
+      "id": "relocate",
+      "kind": "relocate",
+      "package_id": null,
+      "nodeid": "tests/test_acceptance.py::test_relocate",
+      "status": "not-run",
+      "report": null
+    },
+    {
+      "id": "negative",
+      "kind": "negative",
+      "package_id": null,
+      "nodeid": "tests/test_acceptance.py::test_negative",
+      "status": "not-run",
+      "report": null
+    },
+    {
+      "id": "pytest-qgis-runtime",
+      "kind": "package",
+      "package_id": "pytest-qgis",
+      "nodeid": "tests/test_acceptance.py::test_pytest_qgis_runtime",
+      "status": "not-run",
+      "report": null
+    },
+    {
+      "id": "pytest-qgis-failure",
+      "kind": "package",
+      "package_id": "pytest-qgis",
+      "nodeid": "tests/test_acceptance.py::test_pytest_qgis_failure",
+      "status": "not-run",
+      "report": null
+    }
+  ]
+}

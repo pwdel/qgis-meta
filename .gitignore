@@ -1,1 +1,11 @@
 .DS_Store
+
+.venv/
+.venv-governance/
+.pytest_cache/
+.qgis-settings/
+__pycache__/
+
+*.egg-info/
+build/
+dist/

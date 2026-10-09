@@ -26,3 +26,9 @@ Use the same catalog entry pattern, label the creator and original provenance, a
 Check relative links, source claims, date and scope, attribution, and the distinction between guidance and requirements. Use public sources and examples. Review status must describe what was inspected; unresolved conditions cannot become approvals just because a link works.
 
 The repository's original prose has no selected reuse license yet. Do not assume the terms of any linked resource license this repository or other linked resources.
+
+## Change technical governance
+
+Keep the [package catalog](packages/catalog.json), [registry schema](schemas/qgis-registry-v2.schema.json), [draft example](templates/qgis-registry-v2.example.json) and [test requirements](governance/integration-tests.md) consistent. Adding a required package ID or changing required fields is a contract change: publish a new schema version and migration guidance rather than silently invalidating pinned consumers. Check official source/version claims, validate the schema and example, exercise malformed-record rejection, and check documentation links. Public examples must be synthetic. Report schema checks separately from actual QGIS/plugin integration results.
+
+The packaged copies in `qgis_meta/contracts/` must match the canonical schema and catalog byte-for-byte. Regression tests check this. Run the engine tests with an explicit QGIS runtime before claiming native integration coverage. Commit changes before pinning the governance revision in a consuming project; dirty engine checkouts cannot certify compliance.

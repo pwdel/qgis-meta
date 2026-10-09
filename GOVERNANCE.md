@@ -32,6 +32,10 @@ When sources disagree, retain both links and explain the unresolved scope. Do no
 
 ## Project decisions
 
-A map project's README should identify its profile, exact resources and versions, output modes, source and terms URLs, required credits, checked date, reviewer, and any unresolved uses. Describe decisions as permitted with conditions, not permitted for this use, or unresolved, and include the supporting source. These are plain-language notes, not a new data format.
+A map project's README should identify its profile, exact resources and versions, output modes, source and terms URLs, required credits, checked date, reviewer, and any unresolved uses. Describe decisions as permitted with conditions, not permitted for this use, or unresolved, and include the supporting source. Keep the explanatory notes in Markdown and the reproducibility inventory in the required per-project `qgis-registry.json`. The [project contract](governance/project-contract.md) and [schema](schemas/qgis-registry-v2.schema.json) define version 2 of that local format.
 
 Changes to the catalog are reviewed through ordinary GitHub diffs. Additions to a profile are editorial selections. Any stricter local policy must be labeled and justified. Unknown terms remain unresolved.
+
+## Technical acceptance policy
+
+Projects adopting qgis-meta MUST follow the [registry contract](governance/project-contract.md) and [integration-test requirements](governance/integration-tests.md). Every adopted package requires its specified integration tests; catalog packages not used require an explicit reason. Schema-valid, publisher-compatible and runtime-tested are separate states. Only fresh passing evidence permits a compliant claim. Existing projects remain unassessed pending adoption. Python with a QGIS-aware virtual environment is the recommended implementation environment.

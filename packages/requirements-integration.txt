@@ -1,0 +1,4 @@
+# Input constraints, not a certified runtime lock. PyQGIS comes from QGIS.
+-r requirements-governance.txt
+pytest>=8,<10
+pytest-qgis>=4,<5

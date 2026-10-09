@@ -14,3 +14,5 @@ Each entry records scope, evidence, and outstanding decisions. See [review state
 | [WCAG use of color](wcag-use-of-color.md) | Web accessibility standard and explanation | Conditions summarized |
 
 Checked on 2026-10-09. Entries deliberately distinguish resources whose relevant conditions were summarized from discovery pointers requiring item-level review.
+
+For installable QGIS plugins and the Python testing dependency, see the [package catalog](../packages/README.md). For the standard QGIS settings these resources support, see [Layer Properties](../governance/layer-properties.md).

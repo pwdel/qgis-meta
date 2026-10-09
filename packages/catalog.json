@@ -1,0 +1,77 @@
+{
+  "catalog_version": 1,
+  "reviewed_on": "2026-10-09",
+  "authority": "local-policy",
+  "packages": [
+    {
+      "id": "qgis-resource-sharing",
+      "kind": "qgis-plugin",
+      "source_url": "https://plugins.qgis.org/plugins/qgis_resource_sharing/",
+      "candidate_version": "1.2.0",
+      "declared_qgis_min": "3.34.6",
+      "declared_qgis_max": "3.99.0",
+      "review_state": "pointer-checked",
+      "runtime_tested": false,
+      "required_test_ids": [
+        "resource-sharing-install",
+        "resource-sharing-portable"
+      ]
+    },
+    {
+      "id": "quickmapservices",
+      "kind": "qgis-plugin",
+      "source_url": "https://plugins.qgis.org/plugins/quick_map_services/",
+      "candidate_version": "1.5.2",
+      "declared_qgis_min": "3.32.0",
+      "declared_qgis_max": "4.99.0",
+      "review_state": "pointer-checked",
+      "runtime_tested": false,
+      "required_test_ids": [
+        "qms-service",
+        "qms-offline"
+      ]
+    },
+    {
+      "id": "quickosm",
+      "kind": "qgis-plugin",
+      "source_url": "https://plugins.qgis.org/plugins/QuickOSM/",
+      "candidate_version": "2.5.4",
+      "declared_qgis_min": "3.40.0",
+      "declared_qgis_max": "4.99.0",
+      "review_state": "pointer-checked",
+      "runtime_tested": false,
+      "required_test_ids": [
+        "quickosm-acquire",
+        "quickosm-reopen"
+      ]
+    },
+    {
+      "id": "geopacker",
+      "kind": "qgis-plugin",
+      "source_url": "https://plugins.qgis.org/plugins/geopacker/",
+      "candidate_version": "1.6",
+      "declared_qgis_min": "3.0.0",
+      "declared_qgis_max": "4.99.0",
+      "review_state": "pointer-checked",
+      "runtime_tested": false,
+      "required_test_ids": [
+        "geopacker-roundtrip",
+        "geopacker-missing"
+      ]
+    },
+    {
+      "id": "pytest-qgis",
+      "kind": "python-package",
+      "source_url": "https://github.com/GispoCoding/pytest-qgis",
+      "candidate_version": null,
+      "declared_qgis_min": "3.34.0",
+      "declared_qgis_max": null,
+      "review_state": "pointer-checked",
+      "runtime_tested": false,
+      "required_test_ids": [
+        "pytest-qgis-runtime",
+        "pytest-qgis-failure"
+      ]
+    }
+  ]
+}

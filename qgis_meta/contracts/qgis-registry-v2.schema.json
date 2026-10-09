@@ -1,0 +1,980 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "qgis-meta project registry v2",
+  "description": "Local governance contract. Schema validity alone does not establish project compliance. Draft records may be incomplete.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 2
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "blocked",
+        "compliant"
+      ]
+    },
+    "governance_revision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?!.*\\\\)(?!.*:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+        },
+        "crs": {
+          "type": "string",
+          "minLength": 1
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "online",
+              "offline",
+              "print"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "file",
+        "crs",
+        "outputs"
+      ]
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "qgis_version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9]+(?:\\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "python_version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9]+(?:\\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "platform": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "distribution_source": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "venv": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?!.*\\\\)(?!.*:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+        },
+        "lock_file": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?!.*\\\\)(?!.*:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+        }
+      },
+      "required": [
+        "qgis_version",
+        "python_version",
+        "platform",
+        "distribution_source",
+        "venv",
+        "lock_file"
+      ]
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/package"
+      },
+      "minItems": 5,
+      "maxItems": 5,
+      "allOf": [
+        {
+          "contains": {
+            "properties": {
+              "id": {
+                "const": "qgis-resource-sharing"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "properties": {
+              "id": {
+                "const": "quickmapservices"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "properties": {
+              "id": {
+                "const": "quickosm"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "properties": {
+              "id": {
+                "const": "geopacker"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "properties": {
+              "id": {
+                "const": "pytest-qgis"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/asset"
+      }
+    },
+    "layers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/layer"
+      }
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/test"
+      }
+    },
+    "render": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "extent",
+        "crs",
+        "width",
+        "height",
+        "minimum_nonbackground_pixels"
+      ],
+      "properties": {
+        "extent": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "crs": {
+          "type": "string",
+          "minLength": 1
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 16,
+          "maximum": 4096
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 16,
+          "maximum": 4096
+        },
+        "minimum_nonbackground_pixels": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  },
+  "$defs": {
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "enum": [
+            "qgis-resource-sharing",
+            "quickmapservices",
+            "quickosm",
+            "geopacker",
+            "pytest-qgis"
+          ]
+        },
+        "status": {
+          "enum": [
+            "used",
+            "not-used",
+            "blocked"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9]+(?:\\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        },
+        "source_revision": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "archive_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "purposes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "build",
+              "test",
+              "open"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "config_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?!.*\\\\)(?!.*:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+          },
+          "uniqueItems": true
+        },
+        "test_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "status",
+        "reason",
+        "version",
+        "source_url",
+        "source_revision",
+        "archive_sha256",
+        "purposes",
+        "config_paths",
+        "test_ids"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "used"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "version": {
+                "type": "string",
+                "pattern": "^[0-9]+(?:\\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?$"
+              },
+              "purposes": {
+                "minItems": 1
+              },
+              "test_ids": {
+                "minItems": 1
+              }
+            },
+            "anyOf": [
+              {
+                "properties": {
+                  "source_revision": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "archive_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "used"
+              },
+              "id": {
+                "const": "qgis-resource-sharing"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "test_ids": {
+                "allOf": [
+                  {
+                    "contains": {
+                      "const": "resource-sharing-install"
+                    }
+                  },
+                  {
+                    "contains": {
+                      "const": "resource-sharing-portable"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "used"
+              },
+              "id": {
+                "const": "quickmapservices"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "test_ids": {
+                "allOf": [
+                  {
+                    "contains": {
+                      "const": "qms-service"
+                    }
+                  },
+                  {
+                    "contains": {
+                      "const": "qms-offline"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "used"
+              },
+              "id": {
+                "const": "quickosm"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "test_ids": {
+                "allOf": [
+                  {
+                    "contains": {
+                      "const": "quickosm-acquire"
+                    }
+                  },
+                  {
+                    "contains": {
+                      "const": "quickosm-reopen"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "used"
+              },
+              "id": {
+                "const": "geopacker"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "test_ids": {
+                "allOf": [
+                  {
+                    "contains": {
+                      "const": "geopacker-roundtrip"
+                    }
+                  },
+                  {
+                    "contains": {
+                      "const": "geopacker-missing"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "used"
+              },
+              "id": {
+                "const": "pytest-qgis"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "test_ids": {
+                "allOf": [
+                  {
+                    "contains": {
+                      "const": "pytest-qgis-runtime"
+                    }
+                  },
+                  {
+                    "contains": {
+                      "const": "pytest-qgis-failure"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "kind": {
+          "enum": [
+            "data",
+            "style",
+            "svg",
+            "image",
+            "font",
+            "auxiliary",
+            "service"
+          ]
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^(?!/)(?!.*\\\\)(?!.*:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "license_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "attribution": {
+          "type": "string",
+          "minLength": 1
+        },
+        "acquired_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "offline_required": {
+          "type": "boolean"
+        },
+        "acquisition_recipe": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^(?!/)(?!.*\\\\)(?!.*:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "path",
+        "sha256",
+        "source_url",
+        "license_url",
+        "attribution",
+        "acquired_on",
+        "offline_required",
+        "acquisition_recipe"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "service"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "path": {
+                "type": "null"
+              },
+              "sha256": {
+                "type": "null"
+              },
+              "offline_required": {
+                "const": false
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^(?!/)(?!.*\\\\)(?!.*:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asset_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "crs": {
+          "type": "string",
+          "minLength": 1
+        },
+        "geometry": {
+          "enum": [
+            "Point",
+            "MultiPoint",
+            "LineString",
+            "MultiLineString",
+            "Polygon",
+            "MultiPolygon",
+            "Raster",
+            "None"
+          ]
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "feature_count": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "min": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "max": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "min",
+                "max"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subset": {
+          "type": "string"
+        },
+        "visible": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "id",
+        "asset_ids",
+        "provider",
+        "crs",
+        "geometry",
+        "fields",
+        "feature_count",
+        "subset"
+      ]
+    },
+    "test": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "kind": {
+          "const": "package"
+        },
+        "package_id": {
+          "enum": [
+            "qgis-resource-sharing",
+            "quickmapservices",
+            "quickosm",
+            "geopacker",
+            "pytest-qgis"
+          ]
+        },
+        "nodeid": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*\\\\)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^:]+\\.py::[A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)?$"
+        },
+        "status": {
+          "enum": [
+            "not-run",
+            "pass",
+            "fail",
+            "blocked"
+          ]
+        },
+        "report": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^(?!/)(?!.*\\\\)(?!.*:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "package_id",
+        "nodeid",
+        "status",
+        "report"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "pass",
+                  "fail"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "report": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^(?!/)(?!.*\\\\)(?!.*:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "package"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "package_id": {
+                "enum": [
+                  "qgis-resource-sharing",
+                  "quickmapservices",
+                  "quickosm",
+                  "geopacker",
+                  "pytest-qgis"
+                ]
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "package_id": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "status",
+    "governance_revision",
+    "project",
+    "runtime",
+    "packages",
+    "assets",
+    "layers",
+    "tests",
+    "render"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "compliant"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "governance_revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "runtime": {
+            "properties": {
+              "qgis_version": {
+                "type": "string",
+                "pattern": "^[0-9]+(?:\\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?$"
+              },
+              "python_version": {
+                "type": "string",
+                "pattern": "^[0-9]+(?:\\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?$"
+              },
+              "platform": {
+                "type": "string",
+                "minLength": 1
+              },
+              "distribution_source": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "packages": {
+            "items": {
+              "properties": {
+                "status": {
+                  "enum": [
+                    "used",
+                    "not-used"
+                  ]
+                }
+              }
+            }
+          },
+          "assets": {
+            "minItems": 1
+          },
+          "layers": {
+            "minItems": 1
+          },
+          "tests": {
+            "items": {
+              "properties": {
+                "status": {
+                  "const": "pass"
+                },
+                "report": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^(?!/)(?!.*\\\\)(?!.*:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

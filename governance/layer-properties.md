@@ -26,3 +26,7 @@ This index connects QGIS's standard Layer Properties interface to local governan
 All projects record Source, Symbology, Metadata and applicable rendering choices. Document other categories as used or not applicable in project design notes; not every tab needs a custom registry field. Refer to external style/config files through package `config_paths` and asset records.
 
 For design discovery use [Style Hub](../resources/qgis-style-hub.md), [Style Manager](../resources/qgis-style-library.md), [NPS symbols](../resources/nps-symbols.md), [ColorBrewer](../resources/colorbrewer.md) and [Resource Sharing](../packages/README.md). Record the exact selected item, license, tested QGIS version, target scale, and a preview. These recommendations guide selection; successful tests do not establish aesthetic quality or permission to enter land.
+
+Project-wide requirements: [coordinate reference systems](coordinate-reference-systems.md)
+and [minimum map release standards](map-release-standards.md). Source-CRS equality
+alone is insufficient: test the saved operations into the actual canvas and export CRSs.

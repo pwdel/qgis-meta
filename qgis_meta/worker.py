@@ -144,12 +144,46 @@ def main(request_path, response_path):
                 if spec['geometry'] != 'Raster' or layer.width() <= 0 or layer.height() <= 0:
                     issues.append(f'{lid}: invalid raster dimensions or expected type')
             inventory.append(item)
+        # A preview in the source CRS must not hide an unresolved canvas transform.
+        from qgis.core import QgsDatumTransform, QgsCoordinateTransform
+        import math
+        operations = []
+        context = project.transformContext()
+        for destination in {project.crs().authid(), record['render']['crs']}:
+            target = QgsCoordinateReferenceSystem(destination)
+            for layer in layers.values():
+                source = layer.crs()
+                if source == target:
+                    continue
+                pair = f'{source.authid()} -> {destination}'
+                operation = context.calculateCoordinateOperation(source, target)
+                if not operation:
+                    issues.append(f'{layer.id()}: missing saved coordinate operation for {pair}')
+                    continue
+                if context.allowFallbackTransform(source, target):
+                    issues.append(f'{layer.id()}: coordinate operation permits fallback for {pair}')
+                    continue
+                candidates = QgsDatumTransform.operations(source, target)
+                selected = next((op for op in candidates if op.proj == operation), None)
+                if selected is None or not selected.isAvailable:
+                    issues.append(f'{layer.id()}: coordinate operation unavailable or not a supported direct catalog operation for {pair}')
+                    continue
+                transform = QgsCoordinateTransform(source, target, context)
+                try:
+                    point = transform.transform(layer.extent().center())
+                    if not all(math.isfinite(v) for v in (point.x(), point.y())) or transform.fallbackOperationOccurred():
+                        raise ValueError('Nonfinite coordinates or fallback occurred')
+                except Exception as exc:
+                    issues.append(f'{layer.id()}: coordinate operation failed for {pair}: {exc}')
+                operations.append({'layer': layer.id(), 'source': source.authid(),
+                                   'destination': destination, 'operation': operation,
+                                   'accuracy_metres': selected.accuracy})
         if project.layoutManager().layouts():
             unsupported.append('Print layouts require separate layout export/dependency checks')
         if project.mapThemeCollection().mapThemes():
             unsupported.append('Map themes require theme-specific rendering checks')
         add('load', 'fail' if issues else 'pass', '; '.join(issues) if issues else
-            'QGIS loaded all expected layers and verified their data', layers=inventory)
+            'QGIS loaded all expected layers and verified their data', layers=inventory, coordinate_operations=operations)
         add('dependencies', 'blocked' if unsupported else 'pass', '; '.join(unsupported) if unsupported
             else 'Supported local datasource and symbol dependencies resolved')
         if issues or unsupported:

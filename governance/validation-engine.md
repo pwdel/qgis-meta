@@ -119,3 +119,9 @@ QGIS_META_QGIS_APP=/Applications/QGIS-final-4_2_3.app \
 ```
 
 The first command runs portable tests and explicitly skips native QGIS tests if no runtime is selected. For Linux set `QGIS_META_QGIS_PYTHON` instead. Native tests use synthetic data, assert real failures for wrong filters/counts/missing data/blank renders, and test relocation isolation when the host supports it. The v1 schema regression suite remains intact. No private project fixtures are included in qgis-meta.
+
+The native `load` gate also enforces [saved coordinate operations](coordinate-reference-systems.md)
+for both canvas and preview targets. It rejects missing/unavailable operations and
+fallback-enabled transformations, even when the preview itself renders successfully.
+The report includes checked pipelines. This does not replace a fresh-profile desktop
+opening or full-area positional-accuracy checks.

@@ -119,3 +119,39 @@ p.write();p.clear()
         subprocess.run([python,'-c',script,str(self.root/'maps/map.qgs')],env=env,check=True,capture_output=True)
         data=self.run_worker()
         self.assertTrue(any(c['id']=='dependencies' and c['status']=='blocked' for c in data['checks']), data)
+
+    def configure_transform(self, target='EPSG:32615', save=True, fallback=False, broken=False):
+        python, env = runtime_environment(PYTHON, APP)
+        script = '''
+import sys
+from qgis.core import *
+app=QgsApplication([],False);app.initQgis()
+p=QgsProject();p.read(sys.argv[1]);src=QgsCoordinateReferenceSystem('EPSG:4326');dst=QgsCoordinateReferenceSystem(sys.argv[2]);p.setCrs(dst)
+if sys.argv[3]=='True':
+ op=QgsDatumTransform.operations(src,dst)[0].proj
+ if sys.argv[5]=='True':op='+proj=pipeline +step +proj=hgridshift +grids=missing-test-grid.gsb'
+ ctx=p.transformContext();ctx.addCoordinateOperation(src,dst,op,sys.argv[4]=='True');p.setTransformContext(ctx)
+p.write();p.clear()
+'''
+        subprocess.run([python,'-c',script,str(self.root/'maps/map.qgs'),target,str(save),str(fallback),str(broken)],env=env,check=True,capture_output=True)
+        self.record['project']['crs']=target
+
+    def test_missing_canvas_transform_fails_even_when_preview_crs_matches_data(self):
+        self.configure_transform(target='EPSG:26915',save=False)
+        result=self.run_worker()
+        self.assertTrue(any(c['id']=='load' and c['status']=='fail' and 'coordinate operation' in c['message'] for c in result['checks']),result)
+
+    def test_saved_available_operation_passes(self):
+        self.configure_transform(target='EPSG:3857')
+        result=self.run_worker()
+        self.assertTrue(any(c['id']=='load' and c['status']=='pass' for c in result['checks']),result)
+
+    def test_transform_fallback_is_rejected(self):
+        self.configure_transform(target='EPSG:3857',fallback=True)
+        result=self.run_worker()
+        self.assertTrue(any(c['id']=='load' and c['status']=='fail' and 'fallback' in c['message'] for c in result['checks']),result)
+
+    def test_unavailable_transform_is_rejected(self):
+        self.configure_transform(broken=True)
+        result=self.run_worker()
+        self.assertTrue(any(c['id']=='load' and c['status']=='fail' and 'coordinate operation' in c['message'] for c in result['checks']),result)

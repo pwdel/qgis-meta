@@ -13,6 +13,7 @@ def runtime_environment(qgis_python=None, qgis_app=None):
     env = os.environ.copy()
     env.pop('PYQGIS_STARTUP', None)
     env['QT_QPA_PLATFORM'] = 'offscreen'
+    env['PROJ_NETWORK'] = 'OFF'  # Required transformations must be available locally.
     if qgis_app:
         contents = Path(qgis_app).resolve() / 'Contents'
         resources = contents / 'Resources'

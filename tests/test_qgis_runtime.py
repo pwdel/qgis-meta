@@ -427,3 +427,55 @@ picture=QgsLayoutItemPicture(layout);layout.addLayoutItem(picture);picture.attem
         self.edit_project("s=l.labeling().settings();s.geometryGeneratorEnabled=True;s.geometryGenerator='translate($geometry,1,1)';l.setLabeling(QgsVectorLayerSimpleLabeling(s))")
         result=self.run_worker()
         self.assertTrue(any(c['status']=='blocked' and 'geometry generators' in c['message'] for c in result['checks']),result)
+
+    def test_symbol_overlap_rejected_at_layout_scale(self):
+        asset=self.root/'data/points.geojson'
+        data=json.loads(asset.read_text())
+        data['features'].append(dict(data['features'][0]))
+        asset.write_text(json.dumps(data))
+        self.record['layers'][0]['feature_count']={'min':2,'max':2}
+        self.record['assets'][0]['sha256']=hashlib.sha256(asset.read_bytes()).hexdigest()
+        self.layout_with_legend()
+        result=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'symbol collision' in c['message'] for c in result['checks']),result)
+
+    def test_symbol_spacing_uses_layout_scale(self):
+        asset=self.root/'data/points.geojson'
+        data=json.loads(asset.read_text())
+        data['features'].append({'type':'Feature','properties':{'name':'other'},'geometry':{'type':'Point','coordinates':[0.5,0]}})
+        asset.write_text(json.dumps(data))
+        self.record['layers'][0]['feature_count']={'min':2,'max':2}
+        self.record['assets'][0]['sha256']=hashlib.sha256(asset.read_bytes()).hexdigest()
+        self.layout_with_legend()
+        result=self.run_worker()
+        self.assertTrue(all(c['status']=='pass' for c in result['checks']),result)
+        self.edit_project("m=next(i for i in p.layoutManager().layouts()[0].items() if isinstance(i,QgsLayoutItemMap));m.zoomToExtent(QgsRectangle(-100,-100,100,100))")
+        result=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'symbol collision' in c['message'] for c in result['checks']),result)
+
+    def test_symbol_bounds_equivalent_inch_and_mm_maps(self):
+        self.layout_with_legend()
+        python,env=runtime_environment(PYTHON,APP)
+        script='''
+import sys
+sys.path.insert(0,sys.argv[1])
+from qgis.core import *
+from symbol_collisions import marker_boxes
+app=QgsApplication([],False);app.initQgis()
+p=QgsProject();p.read(sys.argv[2]);layout=p.layoutManager().layouts()[0];m=next(i for i in layout.items() if isinstance(i,QgsLayoutItemMap))
+m.attemptResize(QgsLayoutSize(101.6,76.2));m.zoomToExtent(QgsRectangle(-1,-1,1,1))
+blocked=[];a=marker_boxes(m,p,blocked)
+extent=m.extent();m.attemptResize(QgsLayoutSize(4,3,Qgis.LayoutUnit.Inches));m.zoomToExtent(extent)
+b=marker_boxes(m,p,blocked)
+assert not blocked and len(a)==len(b)==1,(blocked,a,b)
+for value,other in zip(a[0][1].getRect(),b[0][1].getRect()):assert abs(value-other)<0.01,(a,b)
+# Native fixed marker offsets are included in the footprint.
+l=m.layers()[0];sl=l.renderer().symbol().symbolLayer(0)
+from qgis.PyQt.QtCore import QPointF
+sl.setOffset(QPointF(5,0));sl.setOffsetUnit(Qgis.RenderUnit.Millimeters)
+c=marker_boxes(m,p,blocked)
+assert abs(c[0][1].center().x()-b[0][1].center().x()-50)<0.01,(b,c)
+p.clear();app.exitQgis()
+'''
+        result=subprocess.run([python,'-c',script,str(Path(__file__).resolve().parents[1]/'qgis_meta'),str(self.root/'maps/map.qgs')],env=env,capture_output=True,text=True)
+        self.assertEqual(result.returncode,0,result.stderr+result.stdout)

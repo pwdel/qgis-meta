@@ -170,6 +170,8 @@ def inspect_layouts(project, root, declared, errors, blocked, fonts):
             if item.dataDefinedProperties().hasActiveProperties():
                 blocked.append(f'{name}: data-defined layout item needs validation')
             if isinstance(item, QgsLayoutItemMap):
+                from symbol_collisions import check_symbol_collisions
+                check_symbol_collisions(item, project, errors, blocked)
                 targets.add(item.crs().authid())
                 if not any(legend_visible(l, item) for l in legends):
                     errors.append(f'{name}: missing visible linked legend on the map page')

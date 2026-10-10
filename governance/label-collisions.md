@@ -25,3 +25,6 @@ Do not describe those unchecked cases as certified collision-free. Add rendered
 geometry tests before broadening that claim. Font/glyph and export/relocation
 checks continue separately. Do not hard-code camping numbers or place names into
 shared validation rules.
+
+Point-marker-to-marker spacing at published layout scales is checked separately
+under [symbol spacing](symbol-spacing.md).

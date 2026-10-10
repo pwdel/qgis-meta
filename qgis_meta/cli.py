@@ -8,6 +8,8 @@ from .engine import validate
 def main(argv=None):
     parser = argparse.ArgumentParser(prog='qgis-meta')
     commands = parser.add_subparsers(dest='command', required=True)
+    research = commands.add_parser('research-check', help='Validate an unpublished research review JSON')
+    research.add_argument('target',type=Path)
     command = commands.add_parser('validate', help='Validate a repository, project, or registry')
     command.add_argument('target', type=Path)
     command.add_argument('--mode', choices=['static', 'full'], default='full')
@@ -21,6 +23,12 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not args.target.exists():
         parser.error('Target does not exist')
+    if args.command=='research-check':
+        import json
+        from .research import validate_research
+        errors=validate_research(json.loads(args.target.read_text()))
+        print('\n'.join(errors) if errors else 'PASS: research evidence and promotion rules')
+        return 1 if errors else 0
     if args.timeout <= 0:
         parser.error('--timeout must be positive')
     base = args.target.parent if args.target.is_file() else args.target

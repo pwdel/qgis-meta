@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Unpublished research review queue",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "focus_location_id",
+    "candidates"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "focus_location_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "stage",
+          "publish",
+          "location",
+          "jurisdiction",
+          "hypothesis",
+          "claims",
+          "evidence",
+          "questions",
+          "observations",
+          "review"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "stage": {
+            "enum": [
+              "inbox",
+              "researching",
+              "field_checked",
+              "ready_for_review",
+              "promoted",
+              "rejected"
+            ]
+          },
+          "publish": {
+            "const": false
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "lon",
+                  "lat",
+                  "precision"
+                ],
+                "properties": {
+                  "lon": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "lat": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "precision": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            ]
+          },
+          "jurisdiction": {
+            "type": "string",
+            "minLength": 1
+          },
+          "hypothesis": {
+            "type": "string",
+            "minLength": 1
+          },
+          "claims": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "activity",
+                "status",
+                "scope",
+                "evidence_ids"
+              ],
+              "properties": {
+                "activity": {
+                  "enum": [
+                    "walking",
+                    "parking_day",
+                    "parking_overnight",
+                    "camping"
+                  ]
+                },
+                "status": {
+                  "enum": [
+                    "unknown",
+                    "allowed",
+                    "prohibited",
+                    "conditional"
+                  ]
+                },
+                "scope": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "evidence_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "kind",
+                "url",
+                "checked_on",
+                "summary",
+                "supports"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "kind": {
+                  "enum": [
+                    "authority",
+                    "activity_trace",
+                    "onsite_observation",
+                    "map_reference"
+                  ]
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "checked_on": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "summary": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "supports": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "walking",
+                      "parking_day",
+                      "parking_overnight",
+                      "camping",
+                      "location",
+                      "activity_presence"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "observations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "observed_on",
+                "text"
+              ],
+              "properties": {
+                "observed_on": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "photo_path": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "gps_accuracy_m": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "review": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reviewer",
+                  "reviewed_on",
+                  "rationale",
+                  "official_record_id"
+                ],
+                "properties": {
+                  "reviewer": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "reviewed_on": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "rationale": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "official_record_id": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

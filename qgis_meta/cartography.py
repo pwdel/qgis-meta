@@ -248,6 +248,8 @@ def inspect_layouts(project, root, declared, errors, blocked, fonts):
             if item.dataDefinedProperties().hasActiveProperties():
                 blocked.append(f'{name}: data-defined layout item needs validation')
             if isinstance(item, QgsLayoutItemMap):
+                from research import check_research_publication
+                check_research_publication(layout,item.layers(),errors)
                 from symbol_collisions import check_symbol_collisions
                 check_symbol_collisions(item, project, errors, blocked)
                 targets.add(item.crs().authid())
@@ -350,6 +352,8 @@ def export_layouts(project, output):
                 errors.append(f'{layout.name()}: page {page+1} render failed')
         for item in layout.items():
             if isinstance(item, QgsLayoutItemMap):
+                from research import check_research_publication
+                check_research_publication(layout,item.layers(),errors)
                 errors.extend(f'{layout.name()}: {error.message}' for error in item.renderingErrors())
         results.append({'name':layout.name(),'pages':layout.pageCollection().pageCount(),'pdf':path.name})
     return results, errors

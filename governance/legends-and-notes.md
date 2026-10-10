@@ -81,3 +81,6 @@ background. Review exported maps for overlap, scale and legibility as well.
 
 For coordinate encodings, basemap style and source provenance, follow
 [map key and technical information](map-information.md).
+
+Map label placement follows [the label collision policy](label-collisions.md):
+prefer omission over overlap and keep point labels outside their marker bounds.

@@ -81,15 +81,33 @@ def check_glyphs(text, font, errors, name):
 
 
 def check_labels(layer, errors, blocked, evidence):
-    from qgis.core import QgsExpression, QgsVectorLayerSimpleLabeling
+    from qgis.core import QgsExpression, QgsVectorLayerSimpleLabeling, Qgis, QgsPalLayerSettings
     labeling = layer.labeling()
     name = layer.id() + ': labels'
     if not isinstance(labeling, QgsVectorLayerSimpleLabeling):
         blocked.append(f'{name}: only simple native labeling supported')
         return
     settings = labeling.settings()
+    placement = settings.placementSettings()
+    if settings.displayAll or placement.overlapHandling() != Qgis.LabelOverlapHandling.PreventOverlap or placement.allowDegradedPlacement():
+        errors.append(f'{name}: label overlap is forbidden; prevent overlap and disable forced/degraded placement')
+    if layer.geometryType() == Qgis.GeometryType.Point:
+        obstacle = settings.obstacleSettings()
+        if not obstacle.isObstacle() or obstacle.factor() < 10:
+            errors.append(f'{name}: point symbols must be high-priority label obstacles (factor 10)')
+        fmt = settings.format()  # Keep the C++ owner alive for its buffer reference.
+        buffer = fmt.buffer()
+        clearance = buffer.size() if buffer.enabled() else 0
+        if (settings.placement != QgsPalLayerSettings.OrderedPositionsAroundPoint or
+            settings.offsetType != QgsPalLayerSettings.FromSymbolBounds or
+            Qgis.LabelPredefinedPointPosition.OverPoint in settings.pointSettings().predefinedPositionOrder() or
+            settings.distUnits != Qgis.RenderUnit.Millimeters or settings.dist < clearance + 0.2 or
+            (buffer.enabled() and buffer.sizeUnit() != Qgis.RenderUnit.Millimeters)):
+            errors.append(f'{name}: labels must sit outside point symbol bounds with buffer plus 0.2 mm clearance')
     if (settings.callout() and settings.callout().enabled()) or settings.useSubstitutions:
         blocked.append(f'{name}: callouts or text substitutions need validation')
+    if settings.geometryGeneratorEnabled:
+        blocked.append(f'{name}: label geometry generators need placement validation')
     if settings.dataDefinedProperties().hasActiveProperties():
         blocked.append(f'{name}: data-defined label settings need validation')
     check_text(settings.format(), errors, blocked, name, evidence)

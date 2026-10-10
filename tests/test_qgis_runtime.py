@@ -169,7 +169,7 @@ p=QgsProject();p.read(sys.argv[1]);l=next(iter(p.mapLayers().values()))
 
     def label_project(self, missing_font=False, invalid_field=False):
         self.edit_project("""
-s=QgsPalLayerSettings();s.fieldName=%r
+s=QgsPalLayerSettings();s.placement=QgsPalLayerSettings.OrderedPositionsAroundPoint;s.offsetType=QgsPalLayerSettings.FromSymbolBounds;s.dist=1;s.distUnits=Qgis.RenderUnit.Millimeters;o=s.obstacleSettings();o.setFactor(10);s.setObstacleSettings(o);s.fieldName=%r
 fmt=QgsTextFormat();fmt.setFont(QFont(%r or QFontDatabase.families()[0]));fmt.setSize(10);s.setFormat(fmt)
 l.setLabeling(QgsVectorLayerSimpleLabeling(s));l.setLabelsEnabled(True)
 """ % ('absent' if invalid_field else 'name', 'MissingFont_qgis_meta_6789' if missing_font else ''))
@@ -398,3 +398,32 @@ picture=QgsLayoutItemPicture(layout);layout.addLayoutItem(picture);picture.attem
         path.write_bytes(b'not a PNG')
         result=self.run_worker()
         self.assertTrue(any(c['status']=='fail' and 'picture' in c['message'] for c in result['checks']),result)
+
+    def test_label_collision_policy_rejects_overlap(self):
+        self.label_project()
+        self.edit_project("s=l.labeling().settings();placement=s.placementSettings();placement.setOverlapHandling(Qgis.LabelOverlapHandling.AllowOverlapIfRequired);s.setPlacementSettings(placement);l.setLabeling(QgsVectorLayerSimpleLabeling(s))")
+        result=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'overlap' in c['message'] for c in result['checks']),result)
+
+    def test_label_collision_policy_rejects_ignored_point_obstacle(self):
+        self.label_project()
+        self.edit_project("s=l.labeling().settings();obstacle=s.obstacleSettings();obstacle.setIsObstacle(False);s.setObstacleSettings(obstacle);l.setLabeling(QgsVectorLayerSimpleLabeling(s))")
+        result=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'obstacle' in c['message'] for c in result['checks']),result)
+
+    def test_label_collision_policy_rejects_project_override(self):
+        self.edit_project('s=p.labelingEngineSettings();s.setFlag(Qgis.LabelingFlag.UseAllLabels,True);p.setLabelingEngineSettings(s)')
+        result=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'overlap override' in c['message'] for c in result['checks']),result)
+
+    def test_label_collision_policy_rejects_overpoint_candidate(self):
+        self.label_project()
+        self.edit_project('s=l.labeling().settings();point=s.pointSettings();point.setPredefinedPositionOrder([Qgis.LabelPredefinedPointPosition.OverPoint]);s.setPointSettings(point);l.setLabeling(QgsVectorLayerSimpleLabeling(s))')
+        result=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'symbol bounds' in c['message'] for c in result['checks']),result)
+
+    def test_label_collision_policy_blocks_geometry_generator(self):
+        self.label_project()
+        self.edit_project("s=l.labeling().settings();s.geometryGeneratorEnabled=True;s.geometryGenerator='translate($geometry,1,1)';l.setLabeling(QgsVectorLayerSimpleLabeling(s))")
+        result=self.run_worker()
+        self.assertTrue(any(c['status']=='blocked' and 'geometry generators' in c['message'] for c in result['checks']),result)

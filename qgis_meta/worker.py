@@ -70,6 +70,9 @@ def main(request_path, response_path):
         if project.crs().authid() != record['project']['crs']:
             issues.append('Project CRS differs from registry')
         layers = project.mapLayers()
+        flags = project.labelingEngineSettings()
+        if any(flags.testFlag(flag) for flag in (Qgis.LabelingFlag.UseAllLabels, Qgis.LabelingFlag.DrawUnplacedLabels)):
+            issues.append('Project label overlap override: disable use-all and draw-unplaced labels')
         expected = {l['id']: l for l in record['layers']}
         if set(layers) != set(expected):
             issues.append(f'Layer IDs differ: missing={sorted(set(expected)-set(layers))}, unexpected={sorted(set(layers)-set(expected))}')

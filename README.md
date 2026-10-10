@@ -24,6 +24,7 @@ These are starter profiles with editorial recommendations, not external certific
 - [Package catalog](packages/README.md): plugin declarations and required integration boundaries.
 - [Integration tests](governance/integration-tests.md): load, render, relocate and package-specific acceptance requirements.
 - [Python environments](governance/python-environments.md): QGIS-aware virtual environments and dependency locks.
+- [Camping permissions](governance/camping-permissions.md): permit conditions, zone scope and sourced atlas rules.
 - [Vehicle access and parking](governance/vehicle-access.md): distinguish admission, camping seasons, parking permissions and jurisdiction.
 - [Layer Properties](governance/layer-properties.md): standard QGIS settings linked to evidence and tests.
 - [Contributing](CONTRIBUTING.md): add sources, map types, or original artifacts using Markdown.

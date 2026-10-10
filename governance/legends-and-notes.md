@@ -78,3 +78,6 @@ acceptance rather than silently skipping checks.
 
 This is a saved-style contract, not a guarantee of perceptual contrast on every
 background. Review exported maps for overlap, scale and legibility as well.
+
+For coordinate encodings, basemap style and source provenance, follow
+[map key and technical information](map-information.md).

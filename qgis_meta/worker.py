@@ -83,6 +83,16 @@ def main(request_path, response_path):
             if not spec:
                 continue
             check_style_role(layer, spec.get('style_role'), issues)
+            if isinstance(layer,QgsVectorLayer) and layer.renderer() and layer.renderer().type()=='singleSymbol':
+                if any(s.layerType()=='GeometryGenerator' for s in layer.renderer().symbol().symbolLayers()) and not spec.get('anchor_source_asset'):
+                    issues.append(f'{lid}: geometry connector requires registered anchor_source_asset')
+            if spec.get('anchor_source_asset'):
+                from anchors import check_anchors
+                anchor=assets.get(spec['anchor_source_asset'])
+                if not anchor or not anchor.get('path') or (root/anchor['path']).resolve() not in declared:
+                    issues.append(f'{lid}: missing registered anchor source')
+                else:
+                    check_anchors(layer,(root/anchor['path']).resolve(),issues)
             node = project.layerTreeRoot().findLayer(lid)
             if node is None or node.isVisible() != spec.get('visible', True):
                 issues.append(f'{lid}: layer visibility differs from registry')

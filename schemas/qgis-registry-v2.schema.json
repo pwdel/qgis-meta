@@ -781,6 +781,10 @@
             "prohibited"
           ],
           "description": "Shared semantic styling policy. Required for layers conveying prohibition; unrelated symbols may omit it."
+        },
+        "anchor_source_asset": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [

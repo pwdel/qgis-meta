@@ -17,6 +17,13 @@ def check_symbol(symbol, root, declared, errors, blocked, name):
         if sl.dataDefinedProperties().hasActiveProperties():
             blocked.append(f'{name}: data-defined symbol properties require validation')
         kind = sl.layerType()
+        if kind == 'GeometryGenerator':
+            from anchors import is_connector
+            if not is_connector(sl):
+                blocked.append(f'{name}: unsupported geometry generator')
+            else:
+                check_symbol(sl.subSymbol(), root, declared, errors, blocked, name)
+            continue
         if kind == 'SvgMarker':
             path = Path(sl.path()).resolve()
             if not path.is_file() or path not in declared or not path.is_relative_to(root):
@@ -367,10 +374,12 @@ def check_style_role(layer, role, errors):
         fail('requires a single-symbol point renderer')
         return
     symbol = layer.renderer().symbol()
-    if not symbol or symbol.symbolLayerCount() != 1:
+    from anchors import is_connector
+    markers=[sl for sl in symbol.symbolLayers() if not is_connector(sl)] if symbol else []
+    if len(markers) != 1:
         fail('requires exactly one native X marker')
         return
-    sl = symbol.symbolLayer(0)
+    sl = markers[0]
     if sl.layerType() != 'SimpleMarker' or sl.properties().get('name') != 'cross2':
         fail('requires native cross2 (X) marker')
         return

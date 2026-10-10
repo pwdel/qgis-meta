@@ -17,7 +17,10 @@ def marker_boxes(map_item, project, blocked):
         if renderer.type()!='singleSymbol':
             blocked.append(f'{layer.id()}: symbol collision bounds require a single-symbol renderer')
             continue
-        symbol=renderer.symbol()
+        from anchors import is_connector
+        symbol=renderer.symbol().clone()
+        for i in reversed(range(symbol.symbolLayerCount())):
+            if is_connector(symbol.symbolLayer(i)):symbol.deleteSymbolLayer(i)
         transform=QgsCoordinateTransform(layer.crs(),map_item.crs(),project)
         symbol.startRender(context,layer.fields())
         try:

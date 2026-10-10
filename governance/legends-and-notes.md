@@ -84,3 +84,11 @@ For coordinate encodings, basemap style and source provenance, follow
 
 Map label placement follows [the label collision policy](label-collisions.md):
 prefer omission over overlap and keep point labels outside their marker bounds.
+
+## Legend captions stay in the legend
+
+Any statement in the legend must not be repeated as a caption on its linked map. Keep location-index numbers and geographic names when they identify features rather than repeat a legend caption. This applies to all map pages and native map annotations.
+
+The validator compares simple label fields/expressions and static labels inside the map with the linked legend's title, layer names and symbol captions. Matching ignores case, punctuation and repeated whitespace. It checks all features in the layer's saved filter, including those outside the current extent, to prevent duplicates returning after a pan or extent change.
+
+Set the saved layer custom property `qgis_meta/label_role` to `legend-caption` for descriptive symbol layers (e.g. gates, parking restrictions). Such layers must have labeling disabled or produce empty labels. Empty expressions may preserve label-obstacle settings. This explicit role also rejects paraphrased captions; the text comparison alone is not a semantic paraphrase detector. Unsupported labeling modes remain blocked by the existing dependency checks.

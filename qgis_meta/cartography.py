@@ -167,6 +167,52 @@ def check_raster_legend(layer, entries, errors, blocked, name):
         blocked.append(f'{name}: raster legend renderer needs validation')
 
 
+def check_legend_label_repetition(map_item, legend, errors):
+    """Reject repeated legend text and labels explicitly declared legend-only."""
+    import unicodedata
+    from qgis.core import QgsVectorLayer, QgsVectorLayerSimpleLabeling, QgsExpression, QgsLayoutItemLabel
+    from qgis.PyQt.QtCore import Qt
+    def key(value):
+        return ' '.join(re.findall(r'\w+', unicodedata.normalize('NFKC', str(value)).casefold()))
+    captions = {key(legend.title())}
+    for node in legend.model().rootGroup().findLayers():
+        if node.layer():
+            captions.add(key(node.layer().name()))
+        for entry in legend.model().layerLegendNodes(node):
+            captions.add(key(entry.data(Qt.ItemDataRole.DisplayRole)))
+    captions.discard('')
+    def check(value, source, legend_only=False):
+        normalized = key(value) if value is not None else ''
+        if normalized and (legend_only or normalized in captions):
+            errors.append(f'{source}: legend-caption repetition: {value!r}; keep descriptive captions in the legend')
+    for layer in map_item.layers():
+        if not isinstance(layer, QgsVectorLayer) or not layer.labelsEnabled():
+            continue
+        labeling = layer.labeling()
+        if not isinstance(labeling, QgsVectorLayerSimpleLabeling):
+            continue  # Unsupported labeling is separately blocked by check_labels.
+        settings = labeling.settings()
+        expr = QgsExpression(settings.fieldName) if settings.isExpression else None
+        ctx = layer.createExpressionContext()
+        if expr and (expr.hasParserError() or not expr.prepare(ctx)):
+            continue  # Expression errors are separately reported by check_labels.
+        if not expr and settings.fieldName not in {f.name() for f in layer.fields()}:
+            continue
+        legend_only = layer.customProperty('qgis_meta/label_role', '') == 'legend-caption'
+        seen = set()
+        for feature in layer.getFeatures():
+            ctx.setFeature(feature)
+            value = expr.evaluate(ctx) if expr else feature[settings.fieldName]
+            if str(value) not in seen:
+                check(value, layer.id(), legend_only)
+                seen.add(str(value))
+    for item in map_item.layout().items():
+        if (isinstance(item, QgsLayoutItemLabel) and item.page() == map_item.page()
+            and item.isVisible() and not item.excludeFromExports()
+            and map_item.sceneBoundingRect().contains(item.sceneBoundingRect())):
+            check(item.text(), item.id() or 'map annotation')
+
+
 def inspect_layouts(project, root, declared, errors, blocked, fonts):
     from qgis.core import (QgsPrintLayout, QgsLayoutItem, QgsLayoutItemMap,
         QgsLayoutItemPicture, QgsLayoutItemShape, QgsLayoutItemLabel, QgsLayoutItemScaleBar, QgsLayoutItemPage, QgsBasicNumericFormat, QgsLayoutItemLegend,
@@ -226,6 +272,7 @@ def inspect_layouts(project, root, declared, errors, blocked, fonts):
                 if not linked or linked not in layout.items() or linked.page() != item.page():
                     errors.append(f'{name}: legend must link to a map on the same page')
                     continue
+                check_legend_label_repetition(linked, item, errors)
                 if item.legendFilterByMapEnabled() or item.legendFilterOutAtlas() or item.model().layerStyleOverrides():
                     blocked.append(f'{name}: filtered or overridden legends need validation')
                 nodes = item.model().rootGroup().findLayers()

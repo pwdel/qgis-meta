@@ -374,3 +374,27 @@ for component in (Qgis.LegendComponent.Title,Qgis.LegendComponent.Group,Qgis.Leg
                 self.edit_project(setup + change)
                 result = self.run_worker()
                 self.assertTrue(any(c['id'] == 'load' and c['status'] == 'fail' for c in result['checks']), result)
+
+    def test_layout_png_dependency(self):
+        path=self.root/'data/badge.png'
+        self.edit_project(f'''
+from qgis.PyQt.QtGui import QImage, QColor
+image=QImage(32,32,QImage.Format.Format_ARGB32);image.fill(QColor('blue'));assert image.save({str(path)!r})
+layout=QgsPrintLayout(p);layout.initializeDefaults();layout.setName('Badge')
+shape=QgsLayoutItemShape(layout);shape.setShapeType(QgsLayoutItemShape.Ellipse);layout.addLayoutItem(shape);shape.attemptResize(QgsLayoutSize(30,30))
+picture=QgsLayoutItemPicture(layout);layout.addLayoutItem(picture);picture.attemptResize(QgsLayoutSize(20,20));picture.setPicturePath({str(path)!r});picture.setClippingItem(shape);picture.setClipToItem(True);p.layoutManager().addLayout(layout)
+''')
+        self.record['assets'].append(dict(self.record['assets'][0],id='badge',kind='image',path='data/badge.png'))
+        result=self.run_worker()
+        self.assertTrue(all(c['status']=='pass' for c in result['checks']),result)
+        self.edit_project("picture=next(i for i in p.layoutManager().layouts()[0].items() if isinstance(i,QgsLayoutItemPicture));picture.setPicturePath(picture.picturePath(),Qgis.PictureFormat.SVG)")
+        result=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'picture' in c['message'] for c in result['checks']),result)
+        self.edit_project("picture=next(i for i in p.layoutManager().layouts()[0].items() if isinstance(i,QgsLayoutItemPicture));picture.setPicturePath(picture.picturePath(),Qgis.PictureFormat.Raster)")
+        self.record['assets'].pop()
+        result=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'picture' in c['message'] for c in result['checks']),result)
+        self.record['assets'].append(dict(self.record['assets'][0],id='badge',kind='image',path='data/badge.png'))
+        path.write_bytes(b'not a PNG')
+        result=self.run_worker()
+        self.assertTrue(any(c['status']=='fail' and 'picture' in c['message'] for c in result['checks']),result)

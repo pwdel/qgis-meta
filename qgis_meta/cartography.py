@@ -126,7 +126,7 @@ def check_labels(layer, errors, blocked, evidence):
 
 def inspect_layouts(project, root, declared, errors, blocked, fonts):
     from qgis.core import (QgsPrintLayout, QgsLayoutItem, QgsLayoutItemMap,
-        QgsLayoutItemLabel, QgsLayoutItemScaleBar, QgsLayoutItemPage, QgsBasicNumericFormat, QgsLayoutItemLegend,
+        QgsLayoutItemPicture, QgsLayoutItemShape, QgsLayoutItemLabel, QgsLayoutItemScaleBar, QgsLayoutItemPage, QgsBasicNumericFormat, QgsLayoutItemLegend,
         Qgis)
     targets = set()
     for layout in project.layoutManager().layouts():
@@ -159,6 +159,23 @@ def inspect_layouts(project, root, declared, errors, blocked, fonts):
                     blocked.append(f'{name}: map overrides/themes/atlas/grids/overviews need validation')
                 if not item.keepLayerSet() or not item.layers() or any(l.id() not in project.mapLayers() for l in item.layers()):
                     errors.append(f'{name}: map must reference explicit project layers')
+            elif isinstance(item, QgsLayoutItemPicture):
+                from qgis.PyQt.QtGui import QImageReader
+                path = Path(item.picturePath()).resolve()
+                if item.isMissingImage():
+                    errors.append(f'{name}: picture cannot render with saved settings')
+                if item.clipToItem() and (not isinstance(item.clippingItem(), QgsLayoutItemShape) or item.clippingItem() not in layout.items()):
+                    blocked.append(f'{name}: picture clipping requires a native shape in the same layout')
+                if not path.is_file() or path not in declared or not path.is_relative_to(root):
+                    errors.append(f'{name}: picture missing or outside declared assets')
+                elif path.suffix.lower() != '.png':
+                    blocked.append(f'{name}: only local PNG layout pictures are supported')
+                else:
+                    reader = QImageReader(str(path))
+                    if bytes(reader.format()).lower() != b'png' or reader.read().isNull():
+                        errors.append(f'{name}: picture PNG cannot be decoded')
+            elif isinstance(item, QgsLayoutItemShape):
+                check_symbol(item.symbol(), root, declared, errors, blocked, name)
             elif isinstance(item, QgsLayoutItemLegend):
                 linked = item.linkedMap()
                 if not linked or linked not in layout.items() or linked.page() != item.page():

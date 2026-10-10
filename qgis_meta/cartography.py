@@ -142,6 +142,31 @@ def check_labels(layer, errors, blocked, evidence):
             check_glyphs(feature[settings.fieldName], settings.format().font(), errors, name)
 
 
+def check_raster_legend(layer, entries, errors, blocked, name):
+    """Validate native gray/pseudocolor legend ranges; keep other renderers blocked."""
+    import math
+    from qgis.core import QgsSingleBandGrayRenderer, QgsSingleBandPseudoColorRenderer, QgsColorRampShader
+    renderer = layer.renderer()
+    if not entries:
+        errors.append(f'{name}: empty raster legend')
+    if isinstance(renderer, QgsSingleBandGrayRenderer):
+        contrast = renderer.contrastEnhancement()
+        if contrast and not all(math.isfinite(v) for v in (contrast.minimumValue(), contrast.maximumValue())):
+            errors.append(f'{name}: nonfinite grayscale legend range')
+    elif isinstance(renderer, QgsSingleBandPseudoColorRenderer):
+        lo, hi = renderer.classificationMin(), renderer.classificationMax()
+        if not math.isfinite(lo) or not math.isfinite(hi) or lo >= hi:
+            errors.append(f'{name}: invalid pseudocolor legend range')
+        shader = renderer.shader()
+        ramp = shader.rasterShaderFunction() if shader else None
+        if not isinstance(ramp, QgsColorRampShader):
+            blocked.append(f'{name}: raster legend shader needs validation')
+        elif not ramp.colorRampItemList() or any(not math.isfinite(i.value) for i in ramp.colorRampItemList()):
+            errors.append(f'{name}: empty or nonfinite raster legend colors')
+    else:
+        blocked.append(f'{name}: raster legend renderer needs validation')
+
+
 def inspect_layouts(project, root, declared, errors, blocked, fonts):
     from qgis.core import (QgsPrintLayout, QgsLayoutItem, QgsLayoutItemMap,
         QgsLayoutItemPicture, QgsLayoutItemShape, QgsLayoutItemLabel, QgsLayoutItemScaleBar, QgsLayoutItemPage, QgsBasicNumericFormat, QgsLayoutItemLegend,
@@ -222,6 +247,11 @@ def inspect_layouts(project, root, declared, errors, blocked, fonts):
                     if any(str(k).startswith('legend/') for k in node.customProperties()):
                         blocked.append(f'{name}: custom legend text/symbol/order needs validation')
                     renderer = getattr(layer, 'renderer', lambda: None)()
+                    from qgis.core import QgsRasterLayer
+                    if isinstance(layer, QgsRasterLayer):
+                        check_raster_legend(layer, item.model().layerLegendNodes(node), errors, blocked, name)
+                        check_glyphs(layer.name(), item.style(Qgis.LegendComponent.SymbolLabel).font(), errors, name)
+                        continue
                     if not renderer or not hasattr(renderer, 'legendSymbolItems'):
                         blocked.append(f'{name}: legend renderer needs validation')
                         continue

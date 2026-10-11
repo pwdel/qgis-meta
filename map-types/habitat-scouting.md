@@ -8,6 +8,8 @@ Show habitat indicators, predictions, and field observations for planning and co
 
 | Resource | Role and limits |
 | --- | --- |
+| [OpenTopoMap](../resources/opentopomap.md) | Terrain background candidate; check raster-service migration, attribution and acquisition limits. |
+| [Mapbox Outdoors](../resources/mapbox-outdoors.md) | Legacy terrain-style candidate via WMTS/XYZ; token, billing, endpoint and output rights need review. |
 | [OpenStreetMap data](../resources/osm-data.md) | Geographic context, not verification of habitat or access. |
 | [Natural Earth](../resources/natural-earth.md) | Regional overview context only. |
 | [ColorBrewer](../resources/colorbrewer.md) | Distinguish categories from ordered scores and meaningful midpoints. |

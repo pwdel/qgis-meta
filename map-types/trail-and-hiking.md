@@ -8,6 +8,8 @@ Recreation, trail context, and route-planning maps; each project must determine 
 
 | Resource | Role and limits |
 | --- | --- |
+| [OpenTopoMap](../resources/opentopomap.md) | Terrain background candidate; check raster-service migration, attribution and acquisition limits. |
+| [Mapbox Outdoors](../resources/mapbox-outdoors.md) | Legacy terrain-style candidate via WMTS/XYZ; token, billing, endpoint and output rights need review. |
 | [OpenStreetMap data](../resources/osm-data.md) | Candidate trail context; assess completeness, currency, and local evidence. |
 | [OSM standard raster tiles](../resources/osm-standard-tiles.md) | Online context only within service terms; unsuitable for offline packaging. |
 | [NPS pictographic symbols](../resources/nps-symbols.md) | Discover recreation symbols; exact package terms remain unresolved. |

@@ -39,7 +39,7 @@ These are starter profiles with editorial recommendations, not external certific
 
 Catalog inclusion is discovery, not blanket permission. Resource licensing, service access, design suitability, and permission to enter land are separate decisions. A source-read date records an inspection, not a guarantee that terms remain unchanged.
 
-The catalog includes eight resource entries, three profiles, five package declarations, and a versioned project-registry schema with a draft example. The shared engine implements structural, load/render, relocation and negative gates, with a runner for project-authored package integration tests. Unsupported workflows remain blocked. Each map adopts registry v2 and supplies its own data, expectations and test evidence.
+The catalog includes ten resource entries, three profiles, five package declarations, and a versioned project-registry schema with a draft example. The shared engine implements structural, load/render, relocation and negative gates, with a runner for project-authored package integration tests. Unsupported workflows remain blocked. Each map adopts registry v2 and supplies its own data, expectations and test evidence.
 
 ## Reuse
 

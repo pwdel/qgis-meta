@@ -8,6 +8,8 @@ Orientation, location, and regional context in interactive or printed maps.
 
 | Resource | Role and limits |
 | --- | --- |
+| [OpenTopoMap](../resources/opentopomap.md) | Terrain background candidate; check raster-service migration, attribution and acquisition limits. |
+| [Mapbox Outdoors](../resources/mapbox-outdoors.md) | Legacy terrain-style candidate via WMTS/XYZ; token, billing, endpoint and output rights need review. |
 | [Natural Earth](../resources/natural-earth.md) | Regional/world context and overview insets; evaluate dataset scale. |
 | [OpenStreetMap data](../resources/osm-data.md) | More detailed geographic context, subject to data-license and quality review. |
 | [OSM standard raster tiles](../resources/osm-standard-tiles.md) | Interactive basemap candidate only after endpoint review; no offline packaging. |

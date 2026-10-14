@@ -120,7 +120,7 @@ def validate(target, mode='full', *, output=None, qgis_python=None, qgis_app=Non
                         result['checks'].append(finding('runtime:' + key, 'blocked',
                             f'Registered {key} must match measured runtime', expected=expected[key],
                             actual=result['runtime'].get(key)))
-                if all(c['status'] == 'pass' for c in runtime['checks']):
+                if bool(runtime['checks']) and all(c['status'] in {'pass', 'warning'} for c in runtime['checks']):
                     copied = work / 'relocated'
                     copied.mkdir()
                     # Materialize declared dependencies only. No plugin caches or neighboring files.
@@ -132,7 +132,7 @@ def validate(target, mode='full', *, output=None, qgis_python=None, qgis_app=Non
                         shutil.copy2(contained(root, name), dest)
                     moved = run_worker(copied, record, work / 'relocation-run', qgis_python=qgis_python,
                         qgis_app=qgis_app, timeout=timeout, isolated_from=root)
-                    state = 'pass' if all(c['status'] == 'pass' for c in moved['checks']) else (
+                    state = 'pass' if bool(moved['checks']) and all(c['status'] in {'pass', 'warning'} for c in moved['checks']) else (
                         'fail' if any(c['status'] == 'fail' for c in moved['checks']) else 'blocked')
                     result['checks'].append(finding('relocate', state,
                         'Isolated copy load/render with original source and networking denied', checks=moved['checks']))

@@ -55,8 +55,7 @@
             "required": [
               "id",
               "op",
-              "file",
-              "prefix"
+              "file"
             ],
             "properties": {
               "id": {
@@ -71,8 +70,7 @@
                 "minLength": 1
               },
               "prefix": {
-                "type": "string",
-                "minLength": 1
+                "const": "./sources/"
               }
             }
           },
@@ -297,6 +295,36 @@
                 "minLength": 1
               },
               "source": {
+                "$ref": "#/$defs/reference"
+              },
+              "key": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "op",
+              "source",
+              "target",
+              "key"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "op": {
+                "const": "feature_ids"
+              },
+              "source": {
+                "$ref": "#/$defs/reference"
+              },
+              "target": {
                 "$ref": "#/$defs/reference"
               },
               "key": {

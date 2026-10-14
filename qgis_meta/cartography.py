@@ -220,10 +220,11 @@ def check_legend_label_repetition(map_item, legend, errors):
             check(item.text(), item.id() or 'map annotation')
 
 
-def inspect_layouts(project, root, declared, errors, blocked, fonts):
+def inspect_layouts(project, root, declared, errors, blocked, fonts, warnings=None):
     from qgis.core import (QgsPrintLayout, QgsLayoutItem, QgsLayoutItemMap,
         QgsLayoutItemPicture, QgsLayoutItemShape, QgsLayoutItemLabel, QgsLayoutItemScaleBar, QgsLayoutItemPage, QgsBasicNumericFormat, QgsLayoutItemLegend,
         Qgis)
+    warnings = warnings if warnings is not None else []
     targets = set()
     for layout in project.layoutManager().layouts():
         if not isinstance(layout, QgsPrintLayout):
@@ -251,7 +252,7 @@ def inspect_layouts(project, root, declared, errors, blocked, fonts):
                 from research import check_research_publication
                 check_research_publication(layout,item.layers(),errors)
                 from symbol_collisions import check_symbol_collisions
-                check_symbol_collisions(item, project, errors, blocked)
+                check_symbol_collisions(item, project, warnings, blocked)
                 targets.add(item.crs().authid())
                 if not any(legend_visible(l, item) for l in legends):
                     errors.append(f'{name}: missing visible linked legend on the map page')
@@ -343,9 +344,15 @@ def export_layouts(project, output):
         exporter = QgsLayoutExporter(layout)
         cfg = QgsLayoutExporter.PdfExportSettings(); cfg.dpi = 120
         cfg.rasterizeWholeImage = True
+        cfg.appendGeoreference = True
+        cfg.writeGeoPdf = False  # Keep every page in the printable atlas.
+        cfg.includeGeoPdfFeatures = False
         path = output / f'layout-{index}.pdf'
         if exporter.exportToPdf(str(path),cfg) != QgsLayoutExporter.Success:
             errors.append(f'{layout.name()}: PDF export failed')
+        from pdf_output import export_map_pages
+        georeferencing, pdf_errors = export_map_pages(layout, output, f'layout-{index}')
+        errors.extend(f'{layout.name()}: {error}' for error in pdf_errors)
         for page in range(layout.pageCollection().pageCount()):
             image = exporter.renderPageToImage(page, dpi=72)
             if image.isNull() or not image.save(str(output/f'layout-{index}-page-{page+1}.png')):
@@ -355,7 +362,8 @@ def export_layouts(project, output):
                 from research import check_research_publication
                 check_research_publication(layout,item.layers(),errors)
                 errors.extend(f'{layout.name()}: {error.message}' for error in item.renderingErrors())
-        results.append({'name':layout.name(),'pages':layout.pageCollection().pageCount(),'pdf':path.name})
+        results.append({'name':layout.name(),'pages':layout.pageCollection().pageCount(),'pdf':path.name,
+                        'georeferencing':georeferencing, 'include_feature_attributes':False})
     return results, errors
 
 

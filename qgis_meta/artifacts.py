@@ -209,9 +209,9 @@ def _check(inputs, check):
             provider = (layer.findtext('provider') or '').strip()
             _require(provider in ('ogr', 'gdal'), f'Unsupported QGIS provider: {provider}')
             name = (layer.findtext('datasource') or '').strip()
-            _require(name.startswith(check['prefix']), f'Data source does not use required prefix: {name}')
+            from .preflight import source_path
             name = name.split('|', 1)[0]
-            path = contained(inputs.root, str(Path(check['file']).parent / name))
+            path = source_path(contained(inputs.root, check['file']), name)
             payload = inputs.read(str(path.relative_to(inputs.root)))
             if provider == 'gdal':
                 _require(path.suffix.lower() in ('.tif', '.tiff'), 'GDAL source must be a TIFF file')
@@ -227,6 +227,10 @@ def _check(inputs, check):
         _require(_equal(inputs.ref(check['left']), inputs.ref(check['right'])), 'JSON values differ')
     elif op == 'json_value':
         _require(_equal(inputs.ref(check['source']), check['value']), 'JSON value does not match expected value')
+    elif op == 'feature_ids':
+        left = _indexed([f['properties'] for f in _features(inputs.ref(check['source']))], check['key'])
+        right = _indexed([f['properties'] for f in _features(inputs.ref(check['target']))], check['key'])
+        _require(left.keys() == right.keys(), 'Source/display feature IDs differ (missing or extra records)')
     elif op == 'json_length':
         value = inputs.ref(check['source'])
         _require(isinstance(value, list), 'JSON length requires an array')

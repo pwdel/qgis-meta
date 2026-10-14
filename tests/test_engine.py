@@ -171,3 +171,22 @@ class EngineTests(unittest.TestCase):
         (self.root / 'maps/map.qgs').write_text('<qgis projectname="changed"/>')
         new = self.validate(self.root, mode='static')['projects'][0]['input_hashes']['maps/map.qgs']
         self.assertNotEqual(old, new)
+
+    def test_review_warning_does_not_skip_relocation_or_negative_checks(self):
+        from unittest.mock import patch
+        fixture(self.root)
+        worker_result = {'checks': [
+            {'id': 'load', 'status': 'pass', 'message': 'loaded', 'evidence': {}},
+            {'id': 'render', 'status': 'pass', 'message': 'rendered', 'evidence': {}},
+            {'id': 'marker-spacing', 'status': 'warning', 'message': 'review bounds', 'evidence': {}}],
+            'runtime': {}}
+        def run(root, record, work, **kwargs):
+            work.mkdir(parents=True, exist_ok=True)
+            return worker_result
+        with patch('qgis_meta.engine.run_worker', side_effect=run) as worker:
+            report = self.validate(self.root, mode='full')
+        self.assertEqual(worker.call_count, 2)
+        checks = {c['id']: c for c in self.findings(report)}
+        self.assertEqual(checks['relocate']['status'], 'pass', report)
+        self.assertEqual(checks['negative']['status'], 'pass', report)
+        self.assertEqual(checks['marker-spacing']['status'], 'warning')

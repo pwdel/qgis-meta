@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Registry-driven validation of portable QGIS projects"
 readme = "README.md"
 requires-python = ">=3.10"
-# Pure-Python CLI dependency. QGIS/PyQt are supplied by a separate QGIS runtime.
+# Pure-Python CLI dependency. PyQGIS/PyQt/osgeo (GDAL) come from the native QGIS runtime.
 dependencies = ["jsonschema>=4.18,<5"]
 
 [project.optional-dependencies]

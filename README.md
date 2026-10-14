@@ -78,3 +78,5 @@ Create the [governance virtual environment](governance/python-environments.md), 
 ```
 
 The suite covers registry contracts and the engine. Native QGIS tests run when an explicit runtime is configured; otherwise they are skipped. Follow the [engine guide](governance/validation-engine.md) for full runtime testing.
+
+See the [shared validation rule index](governance/validation-rules.md) for source packaging, anchors, labels, legends, georeferenced PDF output and warning behavior.

@@ -17,10 +17,11 @@ The [schema](../schemas/artifact-checks.schema.json) is the complete contract.
   "project_id": "sample-exports",
   "checks": [
     {
-      "id": "record-count",
-      "op": "json_length",
-      "source": {"file": "data/points.geojson", "pointer": "/features"},
-      "length": 3
+      "id": "display-coverage",
+      "op": "feature_ids",
+      "source": {"file": "sources/points.geojson"},
+      "target": {"file": "sources/display-points.geojson"},
+      "key": "id"
     }
   ]
 }
@@ -36,11 +37,12 @@ reports merely because the validator itself is public.
 | Operation | Purpose |
 | --- | --- |
 | `manifest` | Check file byte lengths and SHA-256 against a local single-record or list manifest. |
-| `qgis_sources` | Check QGS datasource paths, existence, GeoJSON collections and TIFF headers. |
+| `qgis_sources` | Require `./sources/` paths in every project, check existence, GeoJSON collections and TIFF headers. |
 | `archive` | Check ZIP CRCs and compare an archive member to a companion file. |
 | `json_equal` | Compare JSON documents or subtrees using JSON Pointers. |
 | `json_value` | Compare a JSON subtree with a configured expected value. |
-| `json_length` | Require an array to have the configured length. |
+| `json_length` | Optional project-specific array length; no universal expected count. |
+| `feature_ids` | Require equal sets of unique, nonempty identifiers in source/display GeoJSON collections; permits reordered records and displaced geometry. |
 | `html_json` | Compare JSON in one named HTML script element with an external JSON source. |
 | `geojson` | Check geometry coordinates, optionally against declared WGS84 bounds. |
 | `flattened_features` | Compare GeoJSON features by identifier, preserving geometry and source attributes; decode JSON-encoded compound attributes. |
@@ -71,3 +73,7 @@ not enforce a governance revision; pin your validator installation for repeatabl
 
 These operations supplement native label, font, legend, spacing, layout and
 rendering checks. They do not route through the opt-in plugin test runner.
+
+The `./sources/` rule is universal in native preflight and artifact source checks. It is relative to each QGS/QGZ, rejects absolute paths, parent traversal and escaping symlinks. The optional legacy `prefix` argument must equal `./sources/`; it cannot weaken the rule. Existing projects using other directories must migrate deliberately. Validation never moves files.
+
+`feature_ids` compares membership rather than a fixed number or full geometry. It catches missing/extra/duplicate IDs while allowing datasets to grow. It does not replace asset hashes, coordinate validation or registered private layer expectations.

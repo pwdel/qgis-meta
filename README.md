@@ -19,6 +19,7 @@ These are starter profiles with editorial recommendations, not external certific
 - [Resource catalog](resources/README.md): existing libraries, services, datasets, and guidance.
 - [Rulesets](rulesets/README.md): linked requirements and recommendations with explicit scope.
 - [Governance](GOVERNANCE.md): what “allowed” means, review states, and source authority.
+- [Artifact consistency checks](governance/artifact-checks.md): declarative local file/export checks through the same CLI.
 - [Validation engine](governance/validation-engine.md): point one CLI/Python function at a map repository.
 - [Project registry contract](governance/project-contract.md): mandatory per-map inventories and adoption rules.
 - [Package catalog](packages/README.md): plugin declarations and required integration boundaries.

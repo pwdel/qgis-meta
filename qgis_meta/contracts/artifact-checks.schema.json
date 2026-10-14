@@ -1,0 +1,331 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Declarative artifact checks",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_id",
+    "checks"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "type": "integer"
+    },
+    "project_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "op",
+              "manifest",
+              "base"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "op": {
+                "const": "manifest"
+              },
+              "manifest": {
+                "type": "string",
+                "minLength": 1
+              },
+              "base": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "op",
+              "file",
+              "prefix"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "op": {
+                "const": "qgis_sources"
+              },
+              "file": {
+                "type": "string",
+                "minLength": 1
+              },
+              "prefix": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "op",
+              "file",
+              "member",
+              "equals"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "op": {
+                "const": "archive"
+              },
+              "file": {
+                "type": "string",
+                "minLength": 1
+              },
+              "member": {
+                "type": "string",
+                "minLength": 1
+              },
+              "equals": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "op",
+              "left",
+              "right"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "op": {
+                "const": "json_equal"
+              },
+              "left": {
+                "$ref": "#/$defs/reference"
+              },
+              "right": {
+                "$ref": "#/$defs/reference"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "op",
+              "source",
+              "value"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "op": {
+                "const": "json_value"
+              },
+              "source": {
+                "$ref": "#/$defs/reference"
+              },
+              "value": {}
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "op",
+              "source",
+              "length"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "op": {
+                "const": "json_length"
+              },
+              "source": {
+                "$ref": "#/$defs/reference"
+              },
+              "length": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "op",
+              "file",
+              "element_id",
+              "source"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "op": {
+                "const": "html_json"
+              },
+              "file": {
+                "type": "string",
+                "minLength": 1
+              },
+              "element_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source": {
+                "$ref": "#/$defs/reference"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "op",
+              "file"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "op": {
+                "const": "geojson"
+              },
+              "file": {
+                "type": "string",
+                "minLength": 1
+              },
+              "wgs84": {
+                "type": "boolean"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "op",
+              "source",
+              "target",
+              "key"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "op": {
+                "const": "flattened_features"
+              },
+              "source": {
+                "$ref": "#/$defs/reference"
+              },
+              "target": {
+                "type": "string",
+                "minLength": 1
+              },
+              "key": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "op",
+              "file",
+              "column",
+              "source",
+              "key"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "op": {
+                "const": "csv_ids"
+              },
+              "file": {
+                "type": "string",
+                "minLength": 1
+              },
+              "column": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source": {
+                "$ref": "#/$defs/reference"
+              },
+              "key": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file"
+      ],
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pointer": {
+          "type": "string",
+          "pattern": "^(?:/(?:[^~]|~[01])*)*$"
+        }
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # Shared validation engine
 
-`qgis-meta` accepts a repository directory, an individual project directory, or a `qgis-registry.json` file. All inputs use the same Python API and command-line entry point. It validates registered projects and flags unregistered `.qgs`/`.qgz` files. A byte-identical `.qgs` companion to a registered `.qgz` is accepted; a divergent companion fails discovery.
+`qgis-meta` accepts a repository directory, an individual project directory, a `qgis-registry.json` file, or a `qgis-checks.json` artifact configuration. See [artifact checks](artifact-checks.md) for file/export validation and its explicit non-native scope. All inputs use the same Python API and command-line entry point. It validates registered projects and flags unregistered `.qgs`/`.qgz` files. A byte-identical `.qgs` companion to a registered `.qgz` is accepted; a divergent companion fails discovery.
 
 ## Install in a virtual environment
 
@@ -12,7 +12,7 @@ python3 -m venv .venv
 .venv/bin/qgis-meta validate /path/to/map-repository --mode static
 ```
 
-Static mode validates registries, references, paths and asset hashes. Its success at those stages still returns exit code **2**, because QGIS integration has not run. Empty repositories are blocked; an unregistered QGIS file is a failure. The target is never downloaded or repaired automatically.
+For native projects, static mode validates registries, references, paths and asset hashes. Its success at those stages still returns exit code **2**, because QGIS integration has not run. Empty repositories are blocked; an unregistered QGIS file is a failure. The target is never downloaded or repaired automatically.
 
 Full validation needs a QGIS-aware runtime. The engine venv and the QGIS interpreter may use different Python versions; they communicate through JSON files in a temporary directory.
 

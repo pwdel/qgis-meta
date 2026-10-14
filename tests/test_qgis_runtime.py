@@ -20,7 +20,9 @@ class QgisRuntimeTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name) / 'map'
         self.record = fixture(self.root)
-        asset = self.root / 'data/points.geojson'
+        (self.root / 'maps/sources').mkdir()
+        self.record['assets'][0]['path'] = 'maps/sources/points.geojson'
+        asset = self.root / 'maps/sources/points.geojson'
         asset.write_text(json.dumps({'type': 'FeatureCollection', 'features': [
             {'type': 'Feature', 'properties': {'name': 'synthetic'},
              'geometry': {'type': 'Point', 'coordinates': [0, 0]}}]}))
@@ -59,7 +61,7 @@ print(l.id())
         self.assertTrue(any(c['id']=='load' and c['status']=='fail' for c in data['checks']), data)
 
     def test_missing_data_fails_qgis_loading(self):
-        (self.root / 'data/points.geojson').unlink()
+        (self.root / 'maps/sources/points.geojson').unlink()
         data = self.run_worker()
         self.assertTrue(any(c['id']=='load' and c['status']=='fail' for c in data['checks']), data)
 
@@ -72,12 +74,12 @@ print(l.id())
         project = self.root / 'maps/map.qgs'
         import xml.etree.ElementTree as ET
         xml = ET.parse(project)
-        xml.find('.//projectlayers/maplayer/datasource').text = '../data/indirect.vrt'
+        xml.find('.//projectlayers/maplayer/datasource').text = './sources/indirect.vrt'
         xml.write(project)
-        path = self.root / 'data/indirect.vrt'
+        path = self.root / 'maps/sources/indirect.vrt'
         path.write_text('<OGRVRTDataSource/>')
         a = self.record['assets'][0]
-        a.update(path='data/indirect.vrt', sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+        a.update(path='maps/sources/indirect.vrt', sha256=hashlib.sha256(path.read_bytes()).hexdigest())
         result = self.run_worker()
         self.assertTrue(any(c['id']=='dependencies' and c['status']=='blocked' for c in result['checks']), result)
         self.assertFalse((Path(self.temp.name) / 'work/preview.png').exists())
@@ -195,17 +197,20 @@ l.setLabeling(QgsVectorLayerSimpleLabeling(s));l.setLabelsEnabled(True)
         data=self.run_worker()
         self.assertTrue(all(c['status']=='pass' for c in data['checks']),data)
         self.assertTrue((Path(self.temp.name)/'work/layout-0.pdf').is_file())
+        layouts=next(c for c in data['checks'] if c['id']=='layouts')['evidence']['layouts']
+        self.assertTrue(layouts[0]['georeferencing'],layouts)
+        self.assertFalse(layouts[0]['include_feature_attributes'])
 
     def test_declared_missing_svg_fails(self):
-        path=self.root/'data/missing.svg'
-        self.record['assets'].append(dict(self.record['assets'][0],id='symbol',path='data/missing.svg'))
+        path=self.root/'maps/sources/missing.svg'
+        self.record['assets'].append(dict(self.record['assets'][0],id='symbol',path='maps/sources/missing.svg'))
         self.edit_project("l.renderer().setSymbol(QgsMarkerSymbol([QgsSvgMarkerSymbolLayer(%r)]))" % str(path))
         data=self.run_worker()
         self.assertTrue(any(c['status']=='fail' and 'SVG' in c['message'] for c in data['checks']),data)
 
     def svg_project(self, content):
-        path=self.root/'data/symbol.svg';path.write_text(content)
-        self.record['assets'].append(dict(self.record['assets'][0],id='symbol',path='data/symbol.svg',sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
+        path=self.root/'maps/sources/symbol.svg';path.write_text(content)
+        self.record['assets'].append(dict(self.record['assets'][0],id='symbol',path='maps/sources/symbol.svg',sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
         self.edit_project("l.renderer().setSymbol(QgsMarkerSymbol([QgsSvgMarkerSymbolLayer(%r)]))" % str(path))
 
     def test_valid_local_svg_passes(self):
@@ -266,14 +271,14 @@ p.layerTreeRoot().setHasCustomLayerOrder(True);p.layerTreeRoot().setCustomLayerO
         self.assertEqual(render['evidence']['visible_layers'],[self.record['layers'][0]['id'],'second_layer'])
 
     def test_arbitrary_label_text_is_supported(self):
-        path=self.root/'data/points.geojson'
+        path=self.root/'maps/sources/points.geojson'
         data=json.loads(path.read_text());data['features'][0]['properties']['name']='Trail alpha 42 — North';path.write_text(json.dumps(data))
         self.label_project()
         result=self.run_worker()
         self.assertTrue(all(c['status']=='pass' for c in result['checks']),result)
 
     def test_label_missing_glyph_fails(self):
-        path=self.root/'data/points.geojson'
+        path=self.root/'maps/sources/points.geojson'
         data=json.loads(path.read_text());data['features'][0]['properties']['name']='Trail '+chr(0x10FFFF);path.write_text(json.dumps(data))
         self.label_project()
         result=self.run_worker()
@@ -376,7 +381,7 @@ for component in (Qgis.LegendComponent.Title,Qgis.LegendComponent.Group,Qgis.Leg
                 self.assertTrue(any(c['id'] == 'load' and c['status'] == 'fail' for c in result['checks']), result)
 
     def test_layout_png_dependency(self):
-        path=self.root/'data/badge.png'
+        path=self.root/'maps/sources/badge.png'
         self.edit_project(f'''
 from qgis.PyQt.QtGui import QImage, QColor
 image=QImage(32,32,QImage.Format.Format_ARGB32);image.fill(QColor('blue'));assert image.save({str(path)!r})
@@ -384,7 +389,7 @@ layout=QgsPrintLayout(p);layout.initializeDefaults();layout.setName('Badge')
 shape=QgsLayoutItemShape(layout);shape.setShapeType(QgsLayoutItemShape.Ellipse);layout.addLayoutItem(shape);shape.attemptResize(QgsLayoutSize(30,30))
 picture=QgsLayoutItemPicture(layout);layout.addLayoutItem(picture);picture.attemptResize(QgsLayoutSize(20,20));picture.setPicturePath({str(path)!r});picture.setClippingItem(shape);picture.setClipToItem(True);p.layoutManager().addLayout(layout)
 ''')
-        self.record['assets'].append(dict(self.record['assets'][0],id='badge',kind='image',path='data/badge.png'))
+        self.record['assets'].append(dict(self.record['assets'][0],id='badge',kind='image',path='maps/sources/badge.png'))
         result=self.run_worker()
         self.assertTrue(all(c['status']=='pass' for c in result['checks']),result)
         self.edit_project("picture=next(i for i in p.layoutManager().layouts()[0].items() if isinstance(i,QgsLayoutItemPicture));picture.setPicturePath(picture.picturePath(),Qgis.PictureFormat.SVG)")
@@ -394,7 +399,7 @@ picture=QgsLayoutItemPicture(layout);layout.addLayoutItem(picture);picture.attem
         self.record['assets'].pop()
         result=self.run_worker()
         self.assertTrue(any(c['status']=='fail' and 'picture' in c['message'] for c in result['checks']),result)
-        self.record['assets'].append(dict(self.record['assets'][0],id='badge',kind='image',path='data/badge.png'))
+        self.record['assets'].append(dict(self.record['assets'][0],id='badge',kind='image',path='maps/sources/badge.png'))
         path.write_bytes(b'not a PNG')
         result=self.run_worker()
         self.assertTrue(any(c['status']=='fail' and 'picture' in c['message'] for c in result['checks']),result)
@@ -428,8 +433,8 @@ picture=QgsLayoutItemPicture(layout);layout.addLayoutItem(picture);picture.attem
         result=self.run_worker()
         self.assertTrue(any(c['status']=='blocked' and 'geometry generators' in c['message'] for c in result['checks']),result)
 
-    def test_symbol_overlap_rejected_at_layout_scale(self):
-        asset=self.root/'data/points.geojson'
+    def test_symbol_overlap_warns_and_still_exports_at_layout_scale(self):
+        asset=self.root/'maps/sources/points.geojson'
         data=json.loads(asset.read_text())
         data['features'].append(dict(data['features'][0]))
         asset.write_text(json.dumps(data))
@@ -437,10 +442,11 @@ picture=QgsLayoutItemPicture(layout);layout.addLayoutItem(picture);picture.attem
         self.record['assets'][0]['sha256']=hashlib.sha256(asset.read_bytes()).hexdigest()
         self.layout_with_legend()
         result=self.run_worker()
-        self.assertTrue(any(c['status']=='fail' and 'symbol collision' in c['message'] for c in result['checks']),result)
+        self.assertTrue(any(c['status']=='warning' and 'symbol collision' in c['message'] for c in result['checks']),result)
+        self.assertTrue(any(c['id']=='render' and c['status']=='pass' for c in result['checks']),result)
 
     def test_symbol_spacing_uses_layout_scale(self):
-        asset=self.root/'data/points.geojson'
+        asset=self.root/'maps/sources/points.geojson'
         data=json.loads(asset.read_text())
         data['features'].append({'type':'Feature','properties':{'name':'other'},'geometry':{'type':'Point','coordinates':[0.5,0]}})
         asset.write_text(json.dumps(data))
@@ -451,7 +457,8 @@ picture=QgsLayoutItemPicture(layout);layout.addLayoutItem(picture);picture.attem
         self.assertTrue(all(c['status']=='pass' for c in result['checks']),result)
         self.edit_project("m=next(i for i in p.layoutManager().layouts()[0].items() if isinstance(i,QgsLayoutItemMap));m.zoomToExtent(QgsRectangle(-100,-100,100,100))")
         result=self.run_worker()
-        self.assertTrue(any(c['status']=='fail' and 'symbol collision' in c['message'] for c in result['checks']),result)
+        self.assertTrue(any(c['status']=='warning' and 'symbol collision' in c['message'] for c in result['checks']),result)
+        self.assertTrue(any(c['id']=='render' and c['status']=='pass' for c in result['checks']),result)
 
     def test_symbol_bounds_equivalent_inch_and_mm_maps(self):
         self.layout_with_legend()
@@ -479,3 +486,54 @@ p.clear();app.exitQgis()
 '''
         result=subprocess.run([python,'-c',script,str(Path(__file__).resolve().parents[1]/'qgis_meta'),str(self.root/'maps/map.qgs')],env=env,capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stderr+result.stdout)
+
+    def test_plain_pdf_and_corrupt_pdf_fail_georeferencing_verification(self):
+        python, env = runtime_environment(PYTHON, APP)
+        script = '''
+import sys
+from pathlib import Path
+from qgis.core import QgsApplication
+from qgis.PyQt.QtGui import QPdfWriter, QPainter
+sys.path.insert(0,sys.argv[1])
+from pdf_output import inspect_pdf
+app=QgsApplication([],False);app.initQgis()
+path=Path(sys.argv[2]);writer=QPdfWriter(str(path));painter=QPainter(writer)
+painter.drawText(10,10,'Synthetic ordinary PDF');painter.end();del writer
+evidence, errors=inspect_pdf(path,{0});assert errors and not evidence,(evidence,errors)
+path.write_bytes(b'not a pdf');evidence,errors=inspect_pdf(path,{0});assert errors and not evidence
+'''
+        result=subprocess.run([python,'-c',script,str(Path(__file__).resolve().parents[1]/'qgis_meta'),str(Path(self.temp.name)/'plain.pdf')],env=env,text=True,capture_output=True)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+
+    def test_georeferenced_pdf_checks_each_map_page(self):
+        self.layout_with_legend()
+        self.edit_project('''
+layout=p.layoutManager().layouts()[0]
+page=QgsLayoutItemPage(layout);page.setPageSize('A4');layout.pageCollection().addPage(page)
+m=QgsLayoutItemMap(layout);layout.addLayoutItem(m);m.attemptMove(QgsLayoutPoint(10,10),page=1)
+m.attemptResize(QgsLayoutSize(100,100));m.setLayers([l]);m.setKeepLayerSet(True);m.zoomToExtent(QgsRectangle(-1,-1,1,1))
+legend=QgsLayoutItemLegend(layout);layout.addLayoutItem(legend);legend.setLinkedMap(m)
+legend.attemptResize(QgsLayoutSize(80,40));legend.attemptMove(QgsLayoutPoint(120,10),page=1)
+for component in (Qgis.LegendComponent.Title,Qgis.LegendComponent.Group,Qgis.LegendComponent.Subgroup,Qgis.LegendComponent.SymbolLabel):legend.setStyleFont(component,QFont(QFontDatabase.families()[0],10))
+''')
+        result=self.run_worker()
+        self.assertIn('layouts', [c['id'] for c in result['checks']], result)
+        layouts=next(c for c in result['checks'] if c['id']=='layouts')
+        self.assertEqual(layouts['status'],'pass',result)
+        self.assertEqual([r['layout_page'] for r in layouts['evidence']['layouts'][0]['georeferencing']],[1,2])
+
+    def test_georeferencing_uses_exported_page_numbers_after_excluded_cover(self):
+        self.layout_with_legend()
+        self.edit_project('''
+layout=p.layoutManager().layouts()[0]
+page=QgsLayoutItemPage(layout);page.setPageSize('A4');page.setExcludeFromExports(True)
+layout.pageCollection().insertPage(page,0)
+for item in layout.items():
+ if isinstance(item,(QgsLayoutItemMap,QgsLayoutItemLegend)):
+  item.attemptMove(QgsLayoutPoint(10 if isinstance(item,QgsLayoutItemMap) else 120,10),page=1)
+''')
+        result=self.run_worker()
+        self.assertIn('layouts',[c['id'] for c in result['checks']],result)
+        layouts=next(c for c in result['checks'] if c['id']=='layouts')
+        self.assertEqual(layouts['status'],'pass',result)
+        self.assertEqual([r['page'] for r in layouts['evidence']['layouts'][0]['georeferencing']],[1])

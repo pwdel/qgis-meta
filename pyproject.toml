@@ -6,11 +6,15 @@ build-backend = "setuptools.build_meta"
 name = "qgis-meta"
 version = "0.1.0"
 description = "Registry-driven validation of portable QGIS projects"
+readme = "README.md"
 requires-python = ">=3.10"
+# Pure-Python CLI dependency. PyQGIS/PyQt/osgeo (GDAL) come from the native QGIS runtime.
 dependencies = ["jsonschema>=4.18,<5"]
 
 [project.optional-dependencies]
+# Install with uv sync --locked --extra test for development/tests.
 test = ["pytest>=8,<10"]
+integration = ["pytest>=8,<10", "pytest-qgis>=4,<5"]
 
 [project.scripts]
 qgis-meta = "qgis_meta.cli:main"

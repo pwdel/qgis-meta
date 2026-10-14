@@ -31,7 +31,7 @@ def main(request_path, response_path):
 
     try:
         issues, unsupported, inventory = [], [], []
-        fonts = []
+        fonts, warnings = [], []
         from cartography import check_style_role, check_symbol, check_labels, inspect_layouts, export_layouts
         if request.get('isolation_source'):
             import errno
@@ -152,7 +152,7 @@ def main(request_path, response_path):
         import math
         operations = []
         context = project.transformContext()
-        layout_targets = inspect_layouts(project, root, declared, issues, unsupported, fonts)
+        layout_targets = inspect_layouts(project, root, declared, issues, unsupported, fonts, warnings)
         for destination in {project.crs().authid(), record['render']['crs']} | layout_targets:
             target = QgsCoordinateReferenceSystem(destination)
             for layer in layers.values():
@@ -182,6 +182,8 @@ def main(request_path, response_path):
                 operations.append({'layer': layer.id(), 'source': source.authid(),
                                    'destination': destination, 'operation': operation,
                                    'accuracy_metres': selected.accuracy})
+        if warnings:
+            add('marker-spacing', 'warning', '; '.join(warnings))
         if project.mapThemeCollection().mapThemes():
             unsupported.append('Map themes require theme-specific rendering checks')
         add('load', 'fail' if issues else 'pass', '; '.join(issues) if issues else

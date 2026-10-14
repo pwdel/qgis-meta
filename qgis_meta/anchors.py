@@ -9,13 +9,22 @@ def is_connector(sl):
             and sl.enabled())
 
 def check_anchors(layer, source, errors):
-    from qgis.core import QgsVectorLayer, QgsExpression, QgsFeature, QgsGeometry, QgsPointXY
+    from qgis.core import QgsVectorLayer, QgsExpression, QgsFeature, QgsGeometry, QgsPointXY, QgsMarkerSymbolLayer
     def fail(message): errors.append(f'{layer.id()}: anchored connector: {message}')
     if not isinstance(layer, QgsVectorLayer) or layer.crs().authid() != 'EPSG:4326' or layer.renderer().type() != 'singleSymbol':
         fail('requires a WGS84 single-symbol point layer');return
     generated=[s for s in layer.renderer().symbol().symbolLayers() if s.layerType()=='GeometryGenerator']
     if len(generated)!=1 or not is_connector(generated[0]):
         fail('missing or modified point-attached GPS connector');return
+    for marker in layer.renderer().symbol().symbolLayers():
+        if isinstance(marker, QgsMarkerSymbolLayer):
+            if not marker.offset().isNull():
+                fail('symbol offset detaches marker from connector; move display geometry instead')
+            if (marker.horizontalAnchorPoint() != QgsMarkerSymbolLayer.HorizontalAnchorPoint.Center
+                    or marker.verticalAnchorPoint() != QgsMarkerSymbolLayer.VerticalAnchorPoint.Center):
+                fail('marker must be centered on the connector endpoint')
+            if marker.dataDefinedProperties().hasActiveProperties():
+                fail('data-defined marker position/style cannot guarantee connector alignment')
     try:
         features=json.loads(source.read_text())['features']
         originals={f['properties']['id']:f['geometry']['coordinates'] for f in features}

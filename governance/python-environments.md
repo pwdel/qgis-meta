@@ -7,7 +7,39 @@ Use two environments where useful:
 - A lightweight governance environment for JSON Schema and documentation checks; QGIS is unnecessary here.
 - A QGIS-aware integration environment for pytest, pytest-qgis and the selected plugins. QGIS/PyQGIS is provided by the QGIS installation or a pinned system/container distribution, not by an ordinary `pip install qgis`.
 
-## Governance-only setup
+## Root project dependencies (recommended)
+
+Use the root `pyproject.toml` and `uv.lock` for the installable CLI:
+
+```sh
+uv sync --locked
+uv run --locked qgis-meta --help
+uv sync --locked --extra test
+uv run --locked --extra test python -m unittest discover -s tests -v
+```
+
+`jsonschema` is the direct runtime dependency; uv locks its transitive dependencies.
+The `test` extra adds pytest and its dependencies. The `integration` extra adds
+pytest and pytest-qgis; see the [fixture-based test guide](pytest-qgis-tests.md). Setuptools is declared as the
+isolated build backend in `pyproject.toml`; it is not a CLI runtime dependency and
+its build environment is separate from the application's uv lock. Python standard
+library modules and bundled `qgis_meta` helpers are not separate dependencies.
+
+The lock covers supported Python resolution, not a certification on every OS or
+Python version. It does not provision QGIS or desktop plugins. Keep the engine
+venv separate from the QGIS-selected interpreter; native imports run in that
+interpreter. For native acceptance, use the clean checkout pinned by the map registry.
+
+To update Python dependencies deliberately, run `uv lock --upgrade`, inspect the
+lock diff and rerun tests. Ordinary installation uses `--locked` to reject a stale
+lock instead of silently resolving new versions. See [uv projects](https://docs.astral.sh/uv/guides/projects/).
+
+## Earlier governance-only setup
+
+The requirements files below preserve the earlier environment snapshot. New CLI
+installations should use the root project files above; these older lock files are
+not the source of truth for the current CLI dependency resolution.
+
 
 Run from a checkout of qgis-meta:
 

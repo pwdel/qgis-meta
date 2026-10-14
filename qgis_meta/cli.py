@@ -10,7 +10,7 @@ def main(argv=None):
     commands = parser.add_subparsers(dest='command', required=True)
     research = commands.add_parser('research-check', help='Validate an unpublished research review JSON')
     research.add_argument('target',type=Path)
-    command = commands.add_parser('validate', help='Validate a repository, project, or registry')
+    command = commands.add_parser('validate', help='Validate a repository, project, native registry, or qgis-checks.json')
     command.add_argument('target', type=Path)
     command.add_argument('--mode', choices=['static', 'full'], default='full')
     command.add_argument('--output', type=Path)
@@ -35,7 +35,7 @@ def main(argv=None):
     output = args.output or base / 'reports' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
     report = validate(args.target, mode=args.mode, output=output, qgis_python=args.qgis_python,
                       qgis_app=args.qgis_app, timeout=args.timeout, run_project_tests=args.run_project_tests, governance_root=args.governance_root)
-    print(f'{report["status"].upper()}: {len(report["projects"])} registered project(s)')
+    print(f'{report["status"].upper()}: {len(report["projects"])} project check group(s); scope={report["scope"]}')
     for project in report['projects']:
         print(project['project_id'] or project['registry'])
         for check in project['checks']:

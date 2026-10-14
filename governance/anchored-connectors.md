@@ -9,3 +9,5 @@ The validator evaluates every feature and simulates a point move: the source end
 This anchors connectors to symbols, not separately positioned text labels. Text-only displacement should instead use QGIS label callouts with a separately validated contract.
 
 `tests/test_anchored_connectors.py` runs native checks for movement and negative cases. Project builders must preserve saved manual display positions as overrides and retain original source coordinates. Do not rebuild over an active editing session.
+
+Anchored marker layers must use zero visual offset and centered horizontal/vertical anchors. A symbol-only offset or active data-defined marker styling fails: otherwise the line could terminate at the feature geometry while the icon is drawn elsewhere. Move the display feature geometry to move the marker and line together. Label dragging/callouts are not this contract and remain unsupported by the label checks. Native regression tests exercise geometry movement, symbol offsets and noncenter anchors.

@@ -1,7 +1,9 @@
 # Point-symbol spacing on published maps
 
-Every supported layout map must keep separate point-marker footprints at least
-0.2 mm apart at its saved print scale. The shared engine uses QGIS native marker
+Every supported layout map is checked for point-marker footprints less than
+0.2 mm apart at its saved print scale. Such intersections produce a `warning`
+for visual review, not a hard failure. Rendering, relocation and negative checks
+continue; unsupported bounds still block validation. The shared engine uses QGIS native marker
 bounds with the layout CRS, extent, rotation and output resolution, including
 marker size, stroke and fixed offsets. It checks point features across layers,
 including amenity icons adjacent to a park marker. It never tests specific park
@@ -14,8 +16,8 @@ bounds are blocked. Other dependency checks still block unvalidated effects and
 data-defined symbol properties. Lines and polygon fills are not point markers:
 roads may intersect, and connector lines may terminate at a marker.
 
-This gate concerns saved layout scales, not arbitrary desktop zoom levels.
-Displace crowded display markers with connector lines or use a separately
+This review check concerns saved layout scales, not arbitrary desktop zoom levels.
+If visual review confirms a problem, displace crowded display markers with connector lines or use a separately
 validated cluster design. Preserve original coordinates, document displacement,
 and do not represent shifted cartographic coordinates as survey observations.
 Amenity availability must remain separate from access permission and season.

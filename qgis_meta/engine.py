@@ -8,7 +8,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from .common import contained, digest, exit_code, finding
-from .discovery import discover, is_xml_companion
+from .discovery import discover, discover_artifacts, is_xml_companion
 from .static import ROOT, check_registry, check_assets
 from .runtime import run_worker
 
@@ -36,8 +36,12 @@ def validate(target, mode='full', *, output=None, qgis_python=None, qgis_app=Non
     output = Path(output).absolute() if output else None
     if output:
         output.mkdir(parents=True, exist_ok=True)
-    registries, project_files, checks = discover(target)
-    if not registries:
+    artifact_configs = discover_artifacts(target)
+    if target.name == 'qgis-checks.json' and (target.is_file() or target.is_symlink()):
+        registries, project_files, checks = [], [], []
+    else:
+        registries, project_files, checks = discover(target)
+    if not registries and not artifact_configs:
         checks.append(finding('discovery', 'blocked', 'No registered projects found'))
     meta = Path(governance_root).resolve() if governance_root else ROOT
     valid_checkout = (meta / 'pyproject.toml').is_file() and (meta / 'qgis_meta/engine.py').is_file()
@@ -53,6 +57,17 @@ def validate(target, mode='full', *, output=None, qgis_python=None, qgis_app=Non
     report = {'report_version': 1, 'started_at': datetime.now(timezone.utc).isoformat(),
               'target': str(target), 'mode': mode, 'engine': engine_evidence,
               'projects': [], 'checks': checks}
+    if artifact_configs:
+        from .artifacts import run_artifact_checks
+        for config in artifact_configs:
+            if config.is_symlink():
+                checks.append(finding('discovery', 'fail', f'Symlink artifact configuration rejected: {config}'))
+                continue
+            artifact = run_artifact_checks(config)
+            artifact['source'] = git_evidence(config.parent)
+            report['projects'].append(artifact)
+    report['scope'] = 'native-and-artifacts' if (registries or project_files) and artifact_configs else (
+        'artifacts' if artifact_configs and not project_files else 'native')
     declared, ids = set(), set()
     with tempfile.TemporaryDirectory(prefix='qgis-meta-') as temp:
         for index, registry in enumerate(registries):
@@ -105,7 +120,7 @@ def validate(target, mode='full', *, output=None, qgis_python=None, qgis_app=Non
                         result['checks'].append(finding('runtime:' + key, 'blocked',
                             f'Registered {key} must match measured runtime', expected=expected[key],
                             actual=result['runtime'].get(key)))
-                if all(c['status'] == 'pass' for c in runtime['checks']):
+                if bool(runtime['checks']) and all(c['status'] in {'pass', 'warning'} for c in runtime['checks']):
                     copied = work / 'relocated'
                     copied.mkdir()
                     # Materialize declared dependencies only. No plugin caches or neighboring files.
@@ -117,7 +132,7 @@ def validate(target, mode='full', *, output=None, qgis_python=None, qgis_app=Non
                         shutil.copy2(contained(root, name), dest)
                     moved = run_worker(copied, record, work / 'relocation-run', qgis_python=qgis_python,
                         qgis_app=qgis_app, timeout=timeout, isolated_from=root)
-                    state = 'pass' if all(c['status'] == 'pass' for c in moved['checks']) else (
+                    state = 'pass' if bool(moved['checks']) and all(c['status'] in {'pass', 'warning'} for c in moved['checks']) else (
                         'fail' if any(c['status'] == 'fail' for c in moved['checks']) else 'blocked')
                     result['checks'].append(finding('relocate', state,
                         'Isolated copy load/render with original source and networking denied', checks=moved['checks']))

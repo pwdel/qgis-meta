@@ -42,3 +42,19 @@ def is_xml_companion(path, declared):
             return len(names) == 1 and z.read(names[0]) == path.read_bytes()
     except (OSError, zipfile.BadZipFile):
         return False
+
+
+def discover_artifacts(target):
+    """Find declarative checks without traversing cache or symlink directories."""
+    target = Path(target).absolute()
+    if target.is_file() or target.is_symlink():
+        return [target] if target.name == 'qgis-checks.json' else []
+    found = []
+    if not target.is_dir():
+        return found
+    for folder, dirs, files in os.walk(target, followlinks=False):
+        dirs[:] = sorted(d for d in dirs if d not in EXCLUDED and not d.startswith('.venv')
+                         and not (Path(folder) / d).is_symlink())
+        if 'qgis-checks.json' in files:
+            found.append(Path(folder) / 'qgis-checks.json')
+    return found

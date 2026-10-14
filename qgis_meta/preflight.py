@@ -6,6 +6,18 @@ import zipfile
 from pathlib import Path
 
 
+def source_path(project_file, source):
+    """Require the same portable sources directory for every project."""
+    if (not source.startswith('./sources/') or '\\' in source or ':' in source
+            or '..' in Path(source).parts):
+        raise ValueError('datasource must use ./sources/ without parent traversal')
+    base = (project_file.parent / 'sources').resolve()
+    path = (project_file.parent / source).resolve()
+    if not path.is_relative_to(base):
+        raise ValueError('datasource symlink escapes ./sources/')
+    return path
+
+
 def inspect_sources(project_file, root, record, providers):
     if project_file.suffix == '.qgz':
         with zipfile.ZipFile(project_file) as archive:
@@ -24,8 +36,11 @@ def inspect_sources(project_file, root, record, providers):
             blocked.append(f'{lid}: {provider} provider requires a dedicated validator; not loaded')
             continue
         source = providers.decodeUri(provider, layer.findtext('datasource', '')).get('path', '')
-        path = Path(source)
-        path = (project_file.parent / path).resolve() if not path.is_absolute() else path.resolve()
+        try:
+            path = source_path(project_file, source)
+        except ValueError as exc:
+            failed.append(f'{lid}: {exc}')
+            continue
         if not source or not path.is_relative_to(root) or path not in declared:
             failed.append(f'{lid}: source is not a declared project-contained asset')
             continue

@@ -19,7 +19,8 @@ uv run --locked --extra test python -m unittest discover -s tests -v
 ```
 
 `jsonschema` is the direct runtime dependency; uv locks its transitive dependencies.
-The `test` extra adds pytest and its dependencies. Setuptools is declared as the
+The `test` extra adds pytest and its dependencies. The `integration` extra adds
+pytest and pytest-qgis; see the [fixture-based test guide](pytest-qgis-tests.md). Setuptools is declared as the
 isolated build backend in `pyproject.toml`; it is not a CLI runtime dependency and
 its build environment is separate from the application's uv lock. Python standard
 library modules and bundled `qgis_meta` helpers are not separate dependencies.

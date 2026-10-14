@@ -29,7 +29,7 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [
@@ -119,6 +119,18 @@ wheels = [
 ]
 
 [[package]]
+name = "pytest-qgis"
+version = "4.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5e/b9/79eb97d5c30eb14b3a9c108e06436a7d982071fd473512e6ea28bc66fc64/pytest_qgis-4.1.1.tar.gz", hash = "sha256:c7f86f6cb7640a2f595e97fdbbd314450ad88461d1eb1a16c2bb599ad66f57a7", size = 29746, upload-time = "2026-08-04T12:32:40.164Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/de/77/b9e111799b2117346d3001eee9ef492a5305797a0ec59c0bd1e1206480f1/pytest_qgis-4.1.1-py3-none-any.whl", hash = "sha256:78ba6152280203748003e16e1e54e8939ae580d7a0767bb21078e41d166eb6c9", size = 31603, upload-time = "2026-08-04T12:32:39.045Z" },
+]
+
+[[package]]
 name = "qgis-meta"
 version = "0.1.0"
 source = { editable = "." }
@@ -127,6 +139,10 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+integration = [
+    { name = "pytest" },
+    { name = "pytest-qgis" },
+]
 test = [
     { name = "pytest" },
 ]
@@ -134,9 +150,11 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "jsonschema", specifier = ">=4.18,<5" },
+    { name = "pytest", marker = "extra == 'integration'", specifier = ">=8,<10" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8,<10" },
+    { name = "pytest-qgis", marker = "extra == 'integration'", specifier = ">=4,<5" },
 ]
-provides-extras = ["test"]
+provides-extras = ["test", "integration"]
 
 [[package]]
 name = "referencing"

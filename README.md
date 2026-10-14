@@ -17,6 +17,8 @@ uv run --locked qgis-meta validate /path/to/project/qgis-checks.json
 Root `pyproject.toml` declares the package, console command and Python dependencies;
 `uv.lock` pins their resolved versions and transitive dependencies. uv installs
 this project into `.venv`. For test tools, use `uv sync --locked --extra test`.
+For optional native fixture tests, use `uv sync --locked --extra integration` and
+follow the [pytest-qgis test guide](governance/pytest-qgis-tests.md) to select a QGIS-aware interpreter.
 Pip remains supported with `python -m pip install .`, but does not read `uv.lock`.
 
 The lightweight CLI needs `jsonschema`; other pure-Python imports are standard-library

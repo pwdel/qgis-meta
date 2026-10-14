@@ -1,3 +1,5 @@
+# Historical input constraints. Current CLI integration dependencies are declared
+# by pyproject.toml [project.optional-dependencies].integration and pinned in uv.lock.
 # Input constraints, not a certified runtime lock. PyQGIS comes from QGIS.
 -r requirements-governance.txt
 pytest>=8,<10

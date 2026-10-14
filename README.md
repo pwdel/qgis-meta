@@ -4,6 +4,27 @@ A public catalog of map-governance sources, resource pointers, rulesets, project
 
 Start with a map type, find suitable resources, and follow the linked conditions for using them. The library covers basemaps, datasets, styles, symbols, palettes, accessibility, and publication requirements. It starts with existing resources; original artifacts can be cataloged alongside them later.
 
+## Install the CLI with uv
+
+From this checkout's root (the validator is on `codex/shared-artifact-checks` until merged):
+
+```sh
+uv sync --locked
+uv run --locked qgis-meta --help
+uv run --locked qgis-meta validate /path/to/project/qgis-checks.json
+```
+
+Root `pyproject.toml` declares the package, console command and Python dependencies;
+`uv.lock` pins their resolved versions and transitive dependencies. uv installs
+this project into `.venv`. For test tools, use `uv sync --locked --extra test`.
+Pip remains supported with `python -m pip install .`, but does not read `uv.lock`.
+
+The lightweight CLI needs `jsonschema`; other pure-Python imports are standard-library
+or bundled internal modules. Full native validation additionally needs a compatible
+QGIS installation providing `qgis.core` and `qgis.PyQt`. uv does not install QGIS,
+Qt, GDAL/PROJ system libraries or desktop plugins. Select that separate runtime with
+`--qgis-app` (macOS) or `--qgis-python`; see [environment setup](governance/python-environments.md).
+
 ## Start with a map type
 
 | Profile | Purpose |

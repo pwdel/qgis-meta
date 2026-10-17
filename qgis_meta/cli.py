@@ -8,6 +8,12 @@ from .engine import validate
 def main(argv=None):
     parser = argparse.ArgumentParser(prog='qgis-meta')
     commands = parser.add_subparsers(dest='command', required=True)
+    qr = commands.add_parser('qr-location', help='Generate an offline location QR image and JSON record (no QGIS required)')
+    qr.add_argument('--latitude', type=float, required=True)
+    qr.add_argument('--longitude', type=float, required=True)
+    qr.add_argument('--output', type=Path, required=True, help='PNG or SVG output path; parent directory must exist')
+    qr.add_argument('--format', choices=['geo', 'maps'], default='geo', help='RFC 5870 geo URI or HTTPS Google Maps search link')
+    qr.add_argument('--force', action='store_true', help='Replace existing image and JSON record')
     research = commands.add_parser('research-check', help='Validate an unpublished research review JSON')
     research.add_argument('target',type=Path)
     command = commands.add_parser('validate', help='Validate a repository, project, native registry, or qgis-checks.json')
@@ -21,6 +27,14 @@ def main(argv=None):
     command.add_argument('--timeout', type=int, default=120)
     command.add_argument('--run-project-tests', action='store_true', help='Execute trusted project Python tests')
     args = parser.parse_args(argv)
+    if args.command == 'qr-location':
+        from .location_qr import generate_location_qr
+        try:
+            result = generate_location_qr(args.latitude, args.longitude, args.output, args.format, args.force)
+        except (ValueError, OSError) as exc:
+            parser.error(str(exc))
+        print(f'Created {args.output}: {result["payload"]}')
+        return 0
     if not args.target.exists():
         parser.error('Target does not exist')
     if args.command=='research-check':

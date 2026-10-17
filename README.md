@@ -80,3 +80,29 @@ Create the [governance virtual environment](governance/python-environments.md), 
 The suite covers registry contracts and the engine. Native QGIS tests run when an explicit runtime is configured; otherwise they are skipped. Follow the [engine guide](governance/validation-engine.md) for full runtime testing.
 
 See the [shared validation rule index](governance/validation-rules.md) for source packaging, anchors, labels, legends, georeferenced PDF output and warning behavior.
+
+### Location QR codes (no QGIS runtime required)
+
+Install dependencies with `uv sync --locked`. Generate a standard black-and-white QR
+with a four-module quiet zone and a JSON sidecar containing the exact payload:
+
+```sh
+uv run qgis-meta qr-location --latitude 12.5 --longitude -45.25 --output location.png
+uv run qgis-meta qr-location --latitude 12.5 --longitude -45.25 --format maps --output location.svg
+```
+
+These are illustrative coordinates, not a recommended destination. Default `geo`
+encodes `geo:latitude,longitude` ([RFC 5870](https://www.rfc-editor.org/rfc/rfc5870)).
+`maps` encodes an HTTPS Google Maps search link for phones that do not handle geo
+URIs consistently. Generation is offline; scanning a web link may use the network.
+PNG and SVG are supported. Parent directories must exist. Existing images or
+sidecars are protected unless `--force` is supplied. The sidecar is named
+`location.png.json` or `location.svg.json`.
+
+Keep the white border when placing or printing the code, and test with the intended
+phone at the final print size. The code locates a coordinate; it does not certify
+parking or public access. Include printed coordinates as a fallback. A QGIS memory
+provider URI such as `point?crs=epsg:4326` is **not** a location URI for a phone.
+
+QR encoding uses [Segno](https://segno.readthedocs.io/), installed by the project's
+`pyproject.toml` / `uv.lock`; no native PyQGIS dependency is needed for this command.
